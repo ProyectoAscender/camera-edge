@@ -6,8 +6,8 @@ cameras:
     multicast: true
     gstreamer.height: 1920
     gstreamer.width: 1080
-    dataPath: !<!> /root/b2drop/barcelona/idelfons/
-    pmatrix: !<!> /root/b2drop/barcelona/idelfons/pmat/projMat0001_4pts_centro_utm_ACTIVE.txt
+    dataPath: !<!> /root/b2drop/barcelona/urgell/
+    pmatrix: !<!> /root/b2drop/barcelona/urgell/pmat/projMat0001_4pts_centro_utm_ACTIVE.txt
     cameraCalib: !<!> ../data/calib_cameras/0001.params
     framesToProcess: 1
     neverend: true
@@ -30,14 +30,14 @@ cameras:
     maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg
   - maskfile: !<!> ../data/masks/0001_mask.jpg  
     id: "0003"
-    input: !<!> "192.168.88.250"
+    input: !<!> "192.168.89.251"
     user: user
     password: Mypassword_7
-    multicast: false
+    multicast: true
     gstreamer.height: 1920
     gstreamer.width: 1080
     dataPath: !<!> /root/b2drop/barcelona/urgell/
-    pmatrix: !<!> /root/b2drop/barcelona/urgell/pmat/projMat0002_4pts_centro_utm_ACTIVE.txt
+    pmatrix: !<!> /root/b2drop/barcelona/urgell/pmat/projMat0001_4pts_centro_utm_ACTIVE.txt
     cameraCalib: !<!> ../data/calib_cameras/0001.params
     framesToProcess: 1
     neverend: true
