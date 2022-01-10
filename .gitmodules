@@ -1,9 +1,6 @@
 [submodule "tkDNN"]
 	path = tkDNN
 	url = https://github.com/class-euproject/tkDNN
-[submodule "masa_protocol"]
-	path = masa_protocol
-	url = https://github.com/HiPeRT/MASA_protocol
 [submodule "tkCommon"]
 	path = tkCommon
 	url = https://github.com/ceccocats/tkCommon
