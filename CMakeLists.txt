@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.14.1)
 project(class-edge CXX)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC -Wno-deprecated-declarations -Wno-unused-variable")
@@ -7,7 +7,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTKPROJ_PATH='\"${CMAKE_CURRENT_SOURCE_
 #-------------------------------------------------------------------------------
 # CUDA
 #-------------------------------------------------------------------------------
-find_package(CUDA 9.0 REQUIRED)
+find_package(CUDA REQUIRED)
 SET(CUDA_SEPARABLE_COMPILATION ON)
 #set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -arch=sm_30 --compiler-options '-fPIC'")
 set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS})
@@ -49,7 +49,10 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
                     ${CMAKE_CURRENT_SOURCE_DIR}/class-tracker/include 
                     ${CMAKE_CURRENT_SOURCE_DIR}/tkDNN/include
                     ${CMAKE_CURRENT_SOURCE_DIR}/tkCommon/include
-                    ${CMAKE_CURRENT_SOURCE_DIR}/masa_protocol/include)
+                    ${CMAKE_CURRENT_SOURCE_DIR}/masa_protocol/include
+                    ${CMAKE_CURRENT_SOURCE_DIR}/class-tracker/geodetic_utils/geodetic_utils/include/geodetic_utils
+)
+
 include_directories(${CUDA_INCLUDE_DIRS} ${OPENCV_INCLUDE_DIRS} ${NVINFER_INCLUDES} ${CUDNN_INCLUDE_DIRS})
 
 file(GLOB class-edge-SRC "src/*.cpp")
