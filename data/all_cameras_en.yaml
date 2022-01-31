@@ -1,12 +1,12 @@
 cameras:
   - maskfile: !<!> ../../data/masks/elastic.jpg
-    input: !<!> ../../data/elastic.mp4
+    input: !<!> /root/data/videos/Interurban_cams/'C31S 15_10_2021 12_00_00 (UTC+02_00).avi'
     cameraCalib: !<!> ../../data/calib_cameras/20936.params
     id: 2404
     encrypted: 0
-    pmatrix: !<!> ../../data/pmat_new/elastic.txt
+    pmatrix: !<!> ../../data/pmat_new/pmat_2404.txt
     maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg
-    tif: !<!> ../../data/arcipresti_map.tif
+    tif: !<!> /root/data/assets/C31S/C31.tif
   - maskfile: !<!> ../../data/masks/owen_village.jpg
     input: !<!> ../../data/FayetteVille-OwenVillage.mp4
     cameraCalib: !<!> ../../data/calib_cameras/20936.params
@@ -139,7 +139,7 @@ cameras:
     id: 6315
     pmatrix: !<!> ../../data/pmat_new/pmat_07-03-6315_10p.txt
     maskFileOrient: !<!> ../data/masks_orient/3840-2160_mask_null.jpg
-net: !<!> yolo3_berkeley_fp32.rt
+net: !<!> yolo4_berkeley_fp32.rt
 width: 960
 classes: 10
 type: !<!> y

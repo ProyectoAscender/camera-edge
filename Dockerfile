@@ -100,14 +100,6 @@ cd BUILD && \
 cmake .. && \
 make install -j4
 
-ENV AAA=BBB
-COPY . /root/repos/class-edge
-WORKDIR /root/repos/class-edge
-RUN wget https://github.com/glfw/glfw/releases/download/3.3/glfw-3.3.zip && unzip glfw-3.3.zip && mkdir -p glfw-3.3/build && cd glfw-3.3/build && cmake .. && make -j4 && make install
-
-RUN git submodule add https://gitlab.bsc.es/ppc-bsc/masa_protocol ./masa_protocol
-RUN git submodule update --init --recursive 
-
 RUN python3 -m pip install --upgrade pip && \
     apt install -y libzmq3-dev && \
     pip install pytest
@@ -120,6 +112,13 @@ RUN git clone https://github.com/pybind/pybind11.git && \
     make check -j8 && \
     make install
 
+ENV AAA=BBB
+COPY . /root/repos/class-edge
+WORKDIR /root/repos/class-edge
+RUN wget https://github.com/glfw/glfw/releases/download/3.3/glfw-3.3.zip && unzip glfw-3.3.zip && mkdir -p glfw-3.3/build && cd glfw-3.3/build && cmake .. && make -j4 && make install
+
+RUN git submodule add https://gitlab.bsc.es/ppc-bsc/masa_protocol ./masa_protocol
+RUN git submodule update --init --recursive 
 
 # Install matplotlib
 #RUN cd /root/repos/ && git clone https://github.com/Microsoft/vcpkg.git && \
@@ -179,3 +178,5 @@ RUN git clone https://github.com/pybind/pybind11.git && \
 RUN mkdir build && cd build && \
 cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo .. && \
 make
+
+RUN cd build/tkDNN && ./test_yolo4_berkeley
