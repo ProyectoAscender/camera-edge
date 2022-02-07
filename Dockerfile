@@ -176,7 +176,26 @@ RUN git submodule update --init --recursive
 #cd - && \
 
 RUN mkdir build && cd build && \
-cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo .. && \
-make
-
+    cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo .. && \
+    make
+# Creating .rt file of DNN used
 RUN cd build/tkDNN && ./test_yolo4_berkeley
+
+
+# COMPSS added in this dockerfile for PAI Project. 
+RUN python3 -m pip install dataclay pymap3d zmq requests pygeohash geolib 
+RUN apt install -y libeigen3-dev libflann-dev python3-matplotlib python-dev python-dev libflann-dev
+RUN ln -s /usr/include/eigen3/Eigen /usr/include/Eigen
+WORKDIR /root/repos/
+RUN git clone --depth 1 --branch udpsockets https://github.com/class-euproject/COMPSs-obstacle-detection.git &&  \
+    cd COMPSs-obstacle-detection && \
+    git submodule init && \
+    git submodule update && \
+    cd ./tracker_CLASS/ && \
+    mkdir build && \
+    cd build && \
+    cmake ../ && \
+    make -j && \
+    mv track*.so ../../track.so
+# cd class-edge/build/tkDNN/ && ./demo 1 2404 5559 -1 0 0 0.5 &
+COPY tracker.py ./COMPSs-obstacle-detection/
