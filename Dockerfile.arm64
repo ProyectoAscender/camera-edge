@@ -1,0 +1,134 @@
+FROM nvcr.io/nvidia/l4t-base:r32.5.0
+
+ARG OPENCV_VERSION="4.5.2"
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y git build-essential rsync libssl-dev libeigen3-dev libglew-dev libglfw3-dev freeglut3-dev libfreetype6-dev libyaml-cpp-dev libpcap-dev libmatio-dev
+RUN apt install -y --reinstall ca-certificates && wget https://github.com/Kitware/CMake/releases/download/v3.22.1/cmake-3.22.1.tar.gz && \
+    tar xf cmake-3.22.1.tar.gz && \ 
+    cd cmake-3.22.1 && \
+    ./bootstrap && make -j4 && make install
+
+RUN cmake --version
+# Update cmake for tkdnn compiling
+RUN apt install -y gpg wget && \
+    wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null && \
+    echo 'deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ bionic main' | tee /etc/apt/sources.list.d/kitware.list >/dev/null && \
+    apt update -y && rm /usr/share/keyrings/kitware-archive-keyring.gpg && \
+    apt install -y kitware-archive-keyring && \
+    apt update -y && apt install -y cmake && cmake --version
+
+RUN apt-get install -y python3-matplotlib python-dev libgdal-dev libcereal-dev python-numpy
+RUN apt-get install -y libgles2-mesa-dev xorg-dev libglu1-mesa-dev
+RUN apt-get install -y libopencv-dev libopencv-contrib-dev
+
+WORKDIR /root
+
+RUN mkdir repos
+
+WORKDIR /root/repos
+
+RUN apt-get install -y build-essential \
+    unzip \
+    pkg-config \
+    libjpeg-dev \
+    libpng-dev \
+    libtiff-dev \
+    libavcodec-dev \
+    libavformat-dev \
+    libswscale-dev \
+    libv4l-dev \
+    libxvidcore-dev \
+    libx264-dev \
+    libgtk-3-dev \
+    libatlas-base-dev \
+    gfortran \
+    python3-dev \
+    python3-venv \
+    libgstreamer1.0-dev \
+    libgstreamer-plugins-base1.0-dev \
+    libdc1394-22-dev \
+    libavresample-dev
+
+RUN git clone https://github.com/opencv/opencv.git && git clone https://github.com/opencv/opencv_contrib.git
+
+RUN mkdir -p opencv/build
+
+WORKDIR /root/repos/opencv/build
+
+RUN cmake -D CMAKE_BUILD_TYPE=RELEASE \
+    -D CMAKE_INSTALL_PREFIX=/usr/local \
+    -D INSTALL_PYTHON_EXAMPLES=OFF \
+    -D INSTALL_C_EXAMPLES=OFF \
+    -D OPENCV_EXTRA_MODULES_PATH='/root/repos/opencv_contrib/modules' \
+    -D BUILD_EXAMPLES=ON \
+    -D WITH_CUDA=ON \
+    -D CUDA_ARCH_BIN=7.2 \
+    -D CUDA_ARCH_PTX="" \
+    -D ENABLE_FAST_MATH=ON \
+    -D CUDA_FAST_MATH=ON \
+    -D WITH_CUBLAS=ON \
+    -D WITH_LIBV4L=ON \
+    -D WITH_GSTREAMER=ON \
+    -D WITH_GSTREAMER_0_10=OFF \
+    -D WITH_TBB=ON \
+    ../
+
+RUN make -j4
+RUN make install
+RUN ldconfig
+
+#WORKDIR /root/repos/
+#RUN git clone https://git.hipert.unimore.it/mverucchi/class-edge.git
+#ENV AAA=BBB
+#COPY . /root/repos/class-edge
+#WORKDIR /root/repos/class-edge
+#RUN wget https://github.com/glfw/glfw/releases/download/3.3/glfw-3.3.zip && unzip glfw-3.3.zip && mkdir -p glfw-3.3/build && cd glfw-3.3/build && cmake .. && make -j4 && make install
+
+RUN apt install -y libglm-dev
+
+# Class edge compiling requirements
+RUN  wget https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz && \
+     tar xf eigen-3.4.0.tar.gz && cd eigen-3.4.0 && \
+     mkdir build_dir && cd build_dir && cmake .. && make install -j4
+#RUN apt install -y geographiclib-tools
+RUN   wget https://sourceforge.net/projects/geographiclib/files/distrib/GeographicLib-1.52.tar.gz && \
+tar xfpz GeographicLib-1.52.tar.gz && \
+cd GeographicLib-1.52  && \
+mkdir BUILD && \
+cd BUILD && \
+cmake .. && \
+make install -j4
+
+RUN wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py && \
+    python3 -m pip install --upgrade pip && \
+    apt install -y libzmq3-dev && \
+    pip install pytest
+
+RUN git clone https://github.com/pybind/pybind11.git && \
+    cd pybind11 && \
+    mkdir build && \
+    cd build && \
+    cmake .. && \
+    make check -j8 && \
+    make install
+
+
+ENV AAA=BBB
+WORKDIR /root/repos/
+RUN git clone https://git.hipert.unimore.it/mverucchi/class-edge.git --depth 1
+
+# RUN cd class-edge && \
+#     git submodule add https://gitlab.bsc.es/ppc-bsc/masa_protocol ./masa_protocol && \
+#     git submodule update --init --recursive 
+
+# Compile class-edge
+RUN cd class-edge && \
+    sed -r 's/sudo //' scripts/install-glfw-3.3.sh  > scripts/install-glfw-3.3-nosudo.sh && \
+    bash scripts/install-glfw-3.3-nosudo.sh && \
+    git submodule update --init --recursive && \
+    mkdir build && \
+    cd build && \
+    cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo .. && \
+    make -j4
