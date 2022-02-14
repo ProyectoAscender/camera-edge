@@ -116,19 +116,37 @@ RUN git clone https://github.com/pybind/pybind11.git && \
 
 
 ENV AAA=BBB
-WORKDIR /root/repos/
-RUN git clone https://git.hipert.unimore.it/mverucchi/class-edge.git --depth 1
+RUN cd /root/repos && git clone https://github.com/mive93/class-edge.git --depth 1
+WORKDIR /root/repos/class-edge
+RUN wget https://github.com/glfw/glfw/releases/download/3.3/glfw-3.3.zip && unzip glfw-3.3.zip && mkdir -p glfw-3.3/build && cd glfw-3.3/build && cmake .. && make -j4 && make install
+# RUN git submodule add https://gitlab.bsc.es/ppc-bsc/masa_protocol ./masa_protocol
+RUN git submodule update --init --recursive 
 
 # RUN cd class-edge && \
 #     git submodule add https://gitlab.bsc.es/ppc-bsc/masa_protocol ./masa_protocol && \
 #     git submodule update --init --recursive 
 
-# Compile class-edge
-RUN cd class-edge && \
-    sed -r 's/sudo //' scripts/install-glfw-3.3.sh  > scripts/install-glfw-3.3-nosudo.sh && \
-    bash scripts/install-glfw-3.3-nosudo.sh && \
-    git submodule update --init --recursive && \
-    mkdir build && \
-    cd build && \
+RUN mkdir build && cd build && \
     cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo .. && \
-    make -j4
+    make
+# Creating .rt file of DNN used
+RUN cd build/tkDNN && ./test_yolo4_berkeley
+
+
+# # COMPSS added in this dockerfile for PAI Project. 
+# RUN python3 -m pip install dataclay pymap3d zmq requests pygeohash geolib 
+# RUN apt install -y libeigen3-dev libflann-dev python3-matplotlib python-dev python-dev libflann-dev
+# RUN ln -s /usr/include/eigen3/Eigen /usr/include/Eigen
+# WORKDIR /root/repos/
+# RUN git clone --depth 1 --branch udpsockets https://github.com/class-euproject/COMPSs-obstacle-detection.git &&  \
+#     cd COMPSs-obstacle-detection && \
+#     git submodule init && \
+#     git submodule update && \
+#     cd ./tracker_CLASS/ && \
+#     mkdir build && \
+#     cd build && \
+#     cmake ../ && \
+#     make -j && \
+#     mv track*.so ../../track.so
+# # cd class-edge/build/tkDNN/ && ./demo 1 2404 5559 -1 0 0 0.5 &
+# COPY tracker.py ./COMPSs-obstacle-detection/
