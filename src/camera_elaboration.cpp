@@ -151,6 +151,7 @@ void *elaborateSingleCamera(void *ptr)
     tracking::Tracking t(n_states, dt, initial_age, (tracking::Filters_t) cam->filterType);
 
     cv::Mat frame;
+    std::vector<cv::Mat> batch_frame;
     std::vector<cv::Mat> dnn_input;
     cv::Mat distort;
     uint64_t timestamp_acquisition = 0;
@@ -175,10 +176,17 @@ void *elaborateSingleCamera(void *ptr)
 
     //profiling
     edge::Profiler prof(std::to_string(cam->id));
+    
+
+    cv::VideoWriter boxes_video;
+    int w = data.width;
+    int h = data.height;
+    boxes_video.open("boxes_cam_"+std::to_string(data.camId)+".mp4", cv::VideoWriter::fourcc('M','P','4','V'), 30, cv::Size(w, h));
+    
 
     while(gRun){
         prof.tick("Total time");
-            
+        batch_frame.clear();
         //copy the frame that the last frame read by the video capture thread
         prof.tick("Copy frame");
         data.mtxF.lock();
@@ -222,14 +230,17 @@ void *elaborateSingleCamera(void *ptr)
                 frame = distort;
             }
             prof.tock("Undistort");
-
+            batch_frame.push_back(frame);
             //inference
             prof.tick("Inference");
             dnn_input.clear();
-            dnn_input.push_back(frame.clone());  
+            dnn_input.push_back(frame.clone());
             cam->detNN->update(dnn_input);
             detected= cam->detNN->detected;
             prof.tock("Inference");
+
+            cam->detNN->draw(batch_frame);
+            boxes_video << frame;
 
             //feed the tracker
             prof.tick("Tracker feeding");
@@ -274,7 +285,7 @@ void *elaborateSingleCamera(void *ptr)
         else 
             usleep(1000);
     }
-    
+    boxes_video.release();
     pthread_join( video_cap, NULL);
 
     checkCuda( cudaFree(d_input));

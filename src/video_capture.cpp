@@ -41,7 +41,7 @@ void *readVideoCapture( void *ptr )
             usleep(1000000);
             cap.open(data->input);
             printf("cap reinitialize\n");
-            continue;
+            break;
         } 
         
         //resizing the image to 960x540 (the DNN takes in input 544x320)
