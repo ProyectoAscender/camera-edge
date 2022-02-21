@@ -4,6 +4,8 @@ cameras:
     resolution: !<!> 800x450
     cameraCalib: !<!> ../data/calib_cameras/20936.params
     id: 20936
+    framesToProcess: 100
+    portCommunicator: 8887
     encrypted: 1
     pmatrix: !<!> ../data/pmat_new/pmat_07-03-20936_20p.txt
     maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg

@@ -127,6 +127,7 @@ void *elaborateSingleCamera(void *ptr)
     data.height         = cam->streamHeight;
     data.camId          = cam->id;
     data.frameConsumed  = true;
+    data.framesToProcess = cam->framesToProcess;
     data.gstreamer      = cam->gstreamer;
 
     if(show)

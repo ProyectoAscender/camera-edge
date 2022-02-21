@@ -74,7 +74,9 @@ void readParamsFromYaml(const std::string& params_path, const std::vector<int>& 
 
         cameras_par.resize(++n_cameras);
         cameras_par[n_cameras-1].id = camera_id;
-
+        cameras_par[n_cameras-1].framesToProcess  = cameras_yaml[i]["framesToProcess"].as<int>();
+        cameras_par[n_cameras-1].portCommunicator = cameras_yaml[i]["portCommunicator"].as<int>();
+        
         if(cameras_yaml[i]["gstreamer"])
             cameras_par[n_cameras-1].gstreamer = cameras_yaml[i]["gstreamer"].as<bool>();
         else
@@ -180,6 +182,8 @@ bool readParameters(int argc, char **argv,std:: vector<edge::camera_params>& cam
             case 'n':
                 read_net = optarg;
                 break;
+            case 'p':
+                break;
             case 't':
                 read_type = optarg[0];
                 if(type != 'y' && type != 'm' && type != 'c')
@@ -209,6 +213,8 @@ bool readParameters(int argc, char **argv,std:: vector<edge::camera_params>& cam
     if(params_path == "") {
         cameras_par.resize(1);
         cameras_par[0].id                   = 20936;
+        cameras_par[0].framesToProcess      = -1;
+        cameras_par[0].portCommunicator     = 8888;
         cameras_par[0].input                = "../data/20936.mp4";
         cameras_par[0].pmatrixPath          = "../data/pmat_new/pmat_07-03-20936_20p.txt";
         cameras_par[0].maskfilePath         = "";
@@ -405,15 +411,17 @@ std::vector<edge::camera> configure(int argc, char **argv)
                                     cameras[i].calibHeight);
         }
         readProjectionMatrix(cameras_par[i].pmatrixPath, cameras[i].prjMat);
-        cameras[i].id           = cameras_par[i].id;
-        cameras[i].input        = cameras_par[i].input;
-        cameras[i].streamWidth  = cameras_par[i].streamWidth;
-        cameras[i].streamHeight = cameras_par[i].streamHeight;
-        cameras[i].filterType   = cameras_par[i].filterType;
-        cameras[i].show         = cameras_par[i].show;
-        cameras[i].gstreamer    = cameras_par[i].gstreamer;
-        cameras[i].invPrjMat    = cameras[i].prjMat.inv();
-        cameras[i].dataset      = dataset;
+        cameras[i].id               = cameras_par[i].id;
+        cameras[i].input            = cameras_par[i].input;
+        cameras[i].framesToProcess  = cameras_par[i].framesToProcess;
+        cameras[i].portCommunicator = cameras_par[i].portCommunicator;
+        cameras[i].streamWidth      = cameras_par[i].streamWidth;
+        cameras[i].streamHeight     = cameras_par[i].streamHeight;
+        cameras[i].filterType       = cameras_par[i].filterType;
+        cameras[i].show             = cameras_par[i].show;
+        cameras[i].gstreamer        = cameras_par[i].gstreamer;
+        cameras[i].invPrjMat        = cameras[i].prjMat.inv();
+        cameras[i].dataset          = dataset;
     }
 
     //initialize neural netwokr for each camera

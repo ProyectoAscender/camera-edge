@@ -116,10 +116,11 @@ RUN git clone https://github.com/pybind/pybind11.git && \
 
 
 ENV AAA=BBB
-RUN cd /root/repos && git clone https://gitlab.bsc.es/ppc-bsc/software/camera-edge.git --depth 1
-WORKDIR /root/repos/class-edge
+RUN echo "dummy2"
+RUN cd /root/repos && git clone https://gitlab.bsc.es/ppc-bsc/software/camera-edge.git 
+WORKDIR /root/repos/camera-edge
 RUN wget https://github.com/glfw/glfw/releases/download/3.3/glfw-3.3.zip && unzip glfw-3.3.zip && mkdir -p glfw-3.3/build && cd glfw-3.3/build && cmake .. && make -j4 && make install
-# RUN git submodule add https://gitlab.bsc.es/ppc-bsc/masa_protocol ./masa_protocol
+RUN git submodule add https://gitlab.bsc.es/ppc-bsc/software/masa_protocol.git ./masa_protocol
 RUN git submodule update --init --recursive 
 
 # RUN cd class-edge && \

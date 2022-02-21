@@ -22,6 +22,7 @@ struct video_cap_data
     int width           = 0;
     int height          = 0;
     int camId           = 0;
+    int framesToProcess = -1;
     bool frameConsumed  = false;
     bool gstreamer      = false;
 };
