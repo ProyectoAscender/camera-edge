@@ -38,7 +38,7 @@ void *readVideoCapture( void *ptr )
         timestamp_acquisition = getTimeMs();
         prof.tock("Frame acquisition");
         if(!frame.data) {
-            usleep(1000000);
+            usleep(1000000); //us
             cap.open(data->input);
             printf("cap reinitialize\n");
             break;

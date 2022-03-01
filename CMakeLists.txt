@@ -33,6 +33,20 @@ message("Python_Development_FOUND:${Python3_Development_FOUND}")
 message("Python_LIBRARIES:${Python3_LIBRARIES}")
 message("Python_INCLUDE_DIRS:${Python3_INCLUDE_DIRS}")
 
+## use pkg-config to get hints for 0mq locations
+find_package(PkgConfig)
+pkg_check_modules(PC_ZeroMQ QUIET zmq)
+## use the hint from above to find where 'zmq.hpp' is located
+find_path(ZeroMQ_INCLUDE_DIR
+        NAMES zmq.hpp
+        PATHS ${PC_ZeroMQ_INCLUDE_DIRS}
+        )
+## use the hint from about to find the location of libzmq
+find_library(ZeroMQ_LIBRARY
+        NAMES zmq
+        PATHS ${PC_ZeroMQ_LIBRARY_DIRS}
+        )
+
 #-------------------------------------------------------------------------------
 # Submodules
 #-------------------------------------------------------------------------------
@@ -75,6 +89,7 @@ set(class-edge-LIBS ${CUDA_LIBRARIES}
                     tkCommon 
                     class-tracker 
                     class-kernels 
+                    ${ZeroMQ_LIBRARY}
                     )
 add_library(class-edge SHARED ${class-edge-SRC})
 target_link_libraries(class-edge ${class-edge-LIBS} )

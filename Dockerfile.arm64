@@ -128,7 +128,7 @@ RUN git submodule update --init --recursive
 #     git submodule update --init --recursive 
 
 RUN mkdir build && cd build && \
-    cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo .. && \
+    cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -Wno-dev .. && \
     make
 # Creating .rt file of DNN used
 RUN cd build/tkDNN && ./test_yolo4_berkeley

@@ -22,6 +22,7 @@ std::ostream& operator<<(std::ostream& os, const edge::camera& c){
 
     os<<"----------------------------------------------------\n";
     os<< "id \t\t\t" << c.id <<std::endl;
+    os<< "framesToProcess \t\t\t" << c.framesToProcess <<std::endl;
     os<< "input \t\t\t" << c.input<<std::endl;
     os<< "ipCommunicator \t\t" << c.ipCommunicator<<std::endl;
     os<< "portCommunicator \t" << c.portCommunicator<<std::endl;
@@ -43,4 +44,6 @@ bool gRun       = true;
 bool show       = true;
 bool verbose    = true;
 bool record     = false;
+bool recordBoxes= false;
 bool stream     = false;
+bool use_udp_socket = false;

@@ -1,12 +1,13 @@
 cameras:
   - maskfile: !<!> ../data/masks/20936_mask.jpg
-    input: !<!> "U2FsdGVkX1/+aqcC9bcUNAcPwjCM+L7hnxhMmSpuXFUH2NWRUtN1vw3YaaSUYmxW\nJXQXiThSmOTrD8cSCOoOt0TzqxeBAEtlq8Nmo6FjiLs=\n"
-    resolution: !<!> 800x450
+    #input: !<!> /root/data/florencia/arcipressi/videos/elastic-arcipressi-tvcc-03-20220211-074501-3.mp4
+    input: !<!> /root/videos/hola.mp4
+    #resolution: !<!> 800x450
     cameraCalib: !<!> ../data/calib_cameras/20936.params
     id: 20936
     framesToProcess: 100
     portCommunicator: 8887
-    encrypted: 1
+    encrypted: 0
     pmatrix: !<!> ../data/pmat_new/pmat_07-03-20936_20p.txt
     maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg
   - encrypted: 1
@@ -121,7 +122,7 @@ cameras:
     id: 6315
     pmatrix: !<!> ../data/pmat_new/pmat_07-03-6315_10p.txt
     maskFileOrient: !<!> ../data/masks_orient/3840-2160_mask_null.jpg
-net: !<!> yolo4_berkeley_fp16.rt
+net: !<!> yolo4_berkeley_fp32.rt
 width: 960
 classes: 10
 type: !<!> y
@@ -129,5 +130,6 @@ tif: !<!> ../data/masa_map.tif
 height: 540
 password: ""
 filter: 1
-stream: 1
+stream: 0
 record: 0
+recordBoxes: 1

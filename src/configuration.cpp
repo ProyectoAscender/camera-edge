@@ -56,6 +56,8 @@ void readParamsFromYaml(const std::string& params_path, const std::vector<int>& 
 
     if(config["record"]) 
             record = config["record"].as<int>();
+    if(config["recordBoxes"]) 
+            recordBoxes = config["recordBoxes"].as<int>();
     if(config["stream"])
         stream = config["stream"].as<int>();
 
@@ -143,6 +145,7 @@ bool readParameters(int argc, char **argv,std:: vector<edge::camera_params>& cam
                         "-m\tmap.tif path (to get GPS position)\n"
                         "-s\tshow (0=false, 1=true)\n"
                         "-v\tverbose (0=false, 1=true)\n"
+                        "-u\tudp by bsc (0=false, 1=true)\n"
                         "\tlist of camera ids (n ids expected)\n\n";
 
     //default values
@@ -150,6 +153,7 @@ bool readParameters(int argc, char **argv,std:: vector<edge::camera_params>& cam
     tif_map_path    = "../data/masa_map.tif";
     type            = 'y';
     n_classes       = 10;
+    use_udp_socket = false;
 
     //read values
     std::string params_path         = "";
@@ -159,7 +163,7 @@ bool readParameters(int argc, char **argv,std:: vector<edge::camera_params>& cam
     int read_n_classes              = 0;
     
     //read arguments
-    for(int opt;(opt = getopt(argc, argv, ":i:m:s:v:n:c:t:h")) != -1;){
+    for(int opt;(opt = getopt(argc, argv, ":i:m:s:v:n:u:c:t:h")) != -1;){
         switch(opt){
             case 'h':
                 std::cout<<help<<std::endl;
@@ -182,7 +186,8 @@ bool readParameters(int argc, char **argv,std:: vector<edge::camera_params>& cam
             case 'n':
                 read_net = optarg;
                 break;
-            case 'p':
+            case 'u':
+                use_udp_socket = (bool)atoi(optarg);
                 break;
             case 't':
                 read_type = optarg[0];

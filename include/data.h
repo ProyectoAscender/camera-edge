@@ -43,7 +43,7 @@ struct camera{
     cv::Mat                         distCoeff;
     cv::Mat			                precision;
     std::string                     input               = "";
-    std::string                     ipCommunicator      = "127.0.0.1";
+    std::string                     ipCommunicator      = "172.17.0.3";
     tk::dnn::DetectionNN*           detNN               = nullptr;  
     tk::common::GeodeticConverter   geoConv; 
     double*                         adfGeoTransform     = nullptr;
@@ -68,8 +68,10 @@ std::ostream& operator<<(std::ostream& os, const edge::camera& c);
 extern edge::EdgeViewer *viewer;
 extern bool gRun;
 extern bool show;
+extern bool use_udp_socket;
 extern bool verbose;
 extern bool record;
+extern bool recordBoxes;
 extern bool stream;
 
 #endif /*DATA_H*/

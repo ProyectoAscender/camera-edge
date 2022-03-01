@@ -9,6 +9,122 @@
 
 #include "undistort.h"
 
+//Includes for udp sockets
+#include "zmq.hpp"
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <netinet/in.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+
+
+
+void sendUDPMessage(int sockfd,int n_frame, char* data, unsigned int *size ){
+
+    std::cout << "[" << n_frame << "] Processing frame..." << std::endl;
+
+    char clientname[1024] = "";
+    struct sockaddr_in clientaddr = sockaddr_in();
+    socklen_t len = sizeof(clientaddr);
+
+    inet_ntop(AF_INET,&clientaddr.sin_addr,clientname,sizeof(clientname));
+    std::string client_ip_str(clientname);
+
+    std::cout << "Client ip address: " << client_ip_str << std::endl;
+
+    char buffer_recv[1024];
+    int recv_error = recvfrom(sockfd, buffer_recv, 1024,
+        MSG_DONTWAIT, ( struct sockaddr *) &clientaddr,
+        &len);
+
+    inet_ntop(AF_INET,&clientaddr.sin_addr,clientname,sizeof(clientname));
+    client_ip_str = std::string(clientname);
+
+    std::cout << "Client ip address after readfrom: " << client_ip_str << std::endl;
+
+    if (client_ip_str != "0.0.0.0"){
+        std::cout << "Sending data to " << client_ip_str << std::endl;
+        sendto(sockfd, (const char *)data, *size,MSG_DONTWAIT, (const struct sockaddr *) &clientaddr,sizeof(clientaddr));
+    }
+    free(data); 
+}
+
+void collectBoxInfo( std::vector<std::vector<tk::dnn::box>>& batchDetected,
+                std::vector<tk::dnn::box>& box_vector,std::vector<std::tuple<double, double>>& coords,
+                std::vector<std::tuple<double, double>>& coordsGeo, 
+                std::vector<std::tuple<double, double, double, double, double, double, double, double>>& boxCoords,
+                float& scale_x, float& scale_y, edge::camera& camera)
+{
+    double lat_ur, lat_lr, lat_ll, lat_ul, lon_ur, lon_lr, lon_ll, lon_ul;
+    double north, east;
+
+    for (auto &box_batch : batchDetected) { // iterating per frame grouping
+            for (auto &box : box_batch) { // iterating for boxes in frame
+                convertCameraPixelsToMapMeters((box.x + box.w / 2)*scale_x, (box.y + box.h)*scale_y, box.cl, camera, north, east);
+                //convertCameraPixelsToMapMeters(box.x + box.w/2, box.y + box.h/2, box.cl, camera, north,
+                //                               east); // box center
+                // convertCameraPixelsToGeodetic(box.x + box.w/2, box.y + box.h/2, box.cl, camera, lat,
+                //                              lon); // box center
+                convertCameraPixelsToGeodetic(box.x + box.w, box.y, box.cl, camera, lat_ur,
+                                              lon_ur); // box upper right corner
+                convertCameraPixelsToGeodetic(box.x + box.w, box.y + box.h, box.cl, camera, lat_lr,
+                                              lon_lr); // box lower right corner
+                convertCameraPixelsToGeodetic(box.x, box.y + box.h, box.cl, camera, lat_ll,
+                                              lon_ll); // box lower left corner
+                convertCameraPixelsToGeodetic(box.x, box.y, box.cl, camera, lat_ul,
+                                              lon_ul); // box upper left corner
+                box_vector.push_back(box);
+                coords.push_back(std::make_tuple(north, east));
+                // coordsGeo.push_back(std::make_tuple(lat, lon));
+                boxCoords.push_back(std::make_tuple(lat_ur, lon_ur, lat_lr, lon_lr, lat_ll, lon_ll, lat_ul, lon_ul));
+                // printf("\t(%f,%f) converted to (%f,%f)\n", box.x, box.y, north, east);
+            }
+        }
+
+}
+
+
+int openUDPsockets(std::string& socketPort){
+
+
+    zmq::message_t unimportant_message;
+    zmq::context_t context(1);
+
+    struct sockaddr_in servaddr;
+    int sockfd;
+    
+    std::cout << "Listening to tcp://0.0.0.0:" << socketPort << " waiting for COMPSs ack to start" << std::endl;
+    zmq::socket_t *app_socket = new zmq::socket_t(context, ZMQ_REP);
+    app_socket->bind("tcp://0.0.0.0:" + socketPort);
+    app_socket->recv(&unimportant_message); // wait for python workflow to ack to start processing frames
+    app_socket->close();
+    delete app_socket;
+
+    std::cout << "Listening to udp in://0.0.0.0:" << socketPort << std::endl;
+
+    // Creating socket file descriptor
+    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+        perror("socket creation failed");
+        exit(EXIT_FAILURE);
+    }
+
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_port = htons(atoi(socketPort.c_str())); //socketPort
+    servaddr.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0)
+    {
+        std::cout << "Failed to bind socket! " << strerror(errno) << "\n";
+        return 1;
+    }
+
+    std::cout << socketPort << std::endl;
+    //connect(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr));
+        
+
+    return sockfd;
+}
+
 void pixel2GPS(const int x, const int y, double &lat, double &lon, double* adfGeoTransform)
 {
     //conversion from pixels to GPS, via georeferenced map parameters
@@ -29,6 +145,19 @@ void GPS2pixel(double lat, double lon, int &x, int &y, double* adfGeoTransform)
     x = int(round( (lon - adfGeoTransform[0]) / adfGeoTransform[1]) );
     y = int(round( (lat - adfGeoTransform[3]) / adfGeoTransform[5]) );
 }
+
+void convertCameraPixelsToGeodetic(const int x, const int y, const int cl, edge::camera& cam, double& lat, double& lon)
+{
+    double up;
+
+    //transform camera pixel into georeferenced map pixel
+    std::vector<cv::Point2f> x_y, ll;
+    x_y.push_back(cv::Point2f(x, y));
+    cv::perspectiveTransform(x_y, ll, cam.prjMat);
+
+    //transform to map pixel into GPS
+    pixel2GPS(ll[0].x, ll[0].y, lat, lon, cam.adfGeoTransform);
+} 
 
 void convertCameraPixelsToMapMeters(const int x, const int y, const int cl, edge::camera& cam, double& north, double& east)
 {
@@ -116,6 +245,106 @@ void prepareMessage(const tracking::Tracking& t, MasaMessage& message, tk::commo
     message.num_objects = message.objects.size();
 }
 
+char* prepareMessageUDP(std::vector<tk::dnn::box> &box_vector, std::vector<std::tuple<double, double>> &coords,
+                     // std::vector<std::tuple<double, double>> &coordsGeo,
+                     std::vector<std::tuple<double, double, double, double, double, double, double, double>> &boxCoords,
+                     unsigned int n_frame, int cam_id, double lat_init, double lon_init, unsigned int *size, float scale_x, float scale_y) {
+    /*box_vector.erase(std::remove_if(box_vector.begin(), box_vector.end(), [](tk::dnn::box &box) {
+        return box.cl == 7 || box.cl == 8;
+    }), box_vector.end()); // if traffic signs or traffic lights*/
+    for (int i = box_vector.size() - 1; i >= 0; i--) {
+        // if traffic signs or traffic lights
+
+        /*std::cout << "In removing boxes: pixel x: " << box_vector[i].x << " pixel y: " << box_vector[i].y <<
+            " north: " << std::get<0>(coords[i]) << " east: " << std::get<1>(coords[i]) <<
+            " lat: " << std::get<0>(coordsGeo[i]) << " lon: " << std::get<1>(coordsGeo[i]) << std::endl;*/
+        if (box_vector[i].cl == 7 || box_vector[i].cl == 8 || box_vector[i].cl == 6) {
+
+            box_vector.erase(box_vector.begin()+i);
+            coords.erase(coords.begin()+i);
+            //coordsGeo.erase(coordsGeo.begin()+i);
+            boxCoords.erase(boxCoords.begin()+i);
+        }
+    }
+    *size = box_vector.size() * (sizeof(double) * 10 + sizeof(int) + 1 + sizeof(float) * 4) + 1 + sizeof(int)
+            + sizeof(unsigned long long) + sizeof(double) * 2;
+    char *data = (char *) malloc(*size);
+    char *data_origin = data;
+    char flag = ~0;
+    memcpy(data++, &flag, 1);
+    memcpy(data, &cam_id, sizeof(int));
+    data += sizeof(int);
+    unsigned long long timestamp = getTimeMs();
+    memcpy(data, &timestamp, sizeof(unsigned long long));
+    data += sizeof(unsigned long long);
+    memcpy(data, &lat_init, sizeof(double));
+    data += sizeof(double);
+    memcpy(data, &lon_init, sizeof(double));
+    data += sizeof(double);
+    float box_x, box_y, box_w, box_h;
+    for (int i = 0; i < box_vector.size(); i++) {
+        tk::dnn::box box = box_vector[i];
+        std::tuple<double, double> coord = coords[i];
+        double north = std::get<0>(coord);
+        double east = std::get<1>(coord);
+        /*std::tuple<double, double> coordGeo = coordsGeo[i];
+        double lat = std::get<0>(coordGeo);
+        double lon = std::get<1>(coordGeo);*/
+        memcpy(data, &north, sizeof(double));
+        data += sizeof(double);
+        memcpy(data, &east, sizeof(double));
+        data += sizeof(double);
+        /*memcpy(data, &lat, sizeof(double));
+        data += sizeof(double);
+        memcpy(data, &lon, sizeof(double));
+        data += sizeof(double);*/
+        memcpy(data, &n_frame, sizeof(unsigned int));
+        data += sizeof(unsigned int);
+        memcpy(data, &box.cl, sizeof(char));
+        data += sizeof(char);
+	box_x = box.x * scale_x;
+        memcpy(data, &box_x, sizeof(float));
+        data += sizeof(float);
+	box_y = box.y * scale_y;
+        memcpy(data, &box_y, sizeof(float));
+        data += sizeof(float);
+	box_w = box.w * scale_x;
+        memcpy(data, &box_w, sizeof(float));
+        data += sizeof(float);
+	box_h = box.h * scale_y;
+        memcpy(data, &box_h, sizeof(float));
+        data += sizeof(float);
+        std::tuple<double, double, double, double, double, double, double, double> boxCoord = boxCoords[i];
+        double lat_ur = std::get<0>(boxCoord);
+        double lon_ur = std::get<1>(boxCoord);
+        double lat_lr = std::get<2>(boxCoord);
+        double lon_lr = std::get<3>(boxCoord);
+        double lat_ll = std::get<4>(boxCoord);
+        double lon_ll = std::get<5>(boxCoord);
+        double lat_ul = std::get<6>(boxCoord);
+        double lon_ul = std::get<7>(boxCoord);
+        memcpy(data, &lat_ur, sizeof(double));
+        data += sizeof(double);
+        memcpy(data, &lon_ur, sizeof(double));
+        data += sizeof(double);
+        memcpy(data, &lat_lr, sizeof(double));
+        data += sizeof(double);
+        memcpy(data, &lon_lr, sizeof(double));
+        data += sizeof(double);
+        memcpy(data, &lat_ll, sizeof(double));
+        data += sizeof(double);
+        memcpy(data, &lon_ll, sizeof(double));
+        data += sizeof(double);
+        memcpy(data, &lat_ul, sizeof(double));
+        data += sizeof(double);
+        memcpy(data, &lon_ul, sizeof(double));
+        data += sizeof(double);
+    }
+    // printf("\n");
+    return data_origin;
+}
+
+
 void *elaborateSingleCamera(void *ptr)
 {
     edge::camera* cam = (edge::camera*) ptr;
@@ -129,6 +358,8 @@ void *elaborateSingleCamera(void *ptr)
     data.frameConsumed  = true;
     data.framesToProcess = cam->framesToProcess;
     data.gstreamer      = cam->gstreamer;
+    MasaMessage message;
+    Communicator<MasaMessage> communicator;
 
     if(show)
         viewer->bindCamera(cam->id, &cam->show);
@@ -138,11 +369,15 @@ void *elaborateSingleCamera(void *ptr)
         return (void *)1;
     }
     
+    int sockfd=-1;
     //instantiate the communicator and the socket
-    Communicator<MasaMessage> communicator;
-    communicator.open_client_socket((char*)cam->ipCommunicator.c_str(), cam->portCommunicator);
-    int socket = communicator.get_socket();
-    MasaMessage message;
+    if (!use_udp_socket){
+        communicator.open_client_socket((char*)cam->ipCommunicator.c_str(), cam->portCommunicator);
+        int socket = communicator.get_socket();
+    } else {
+        std::string camCommunicatorPort = std::to_string(cam->portCommunicator);
+        sockfd = openUDPsockets(camCommunicatorPort);
+    }
     
     //initiate the tracker
     float   dt              = 0.03;
@@ -161,6 +396,7 @@ void *elaborateSingleCamera(void *ptr)
     std::vector<tk::dnn::box>       detected;
     std::vector<tracking::obj_m>    cur_frame;
 
+    cv::VideoWriter boxes_video;
     double north, east;
     bool ce_verbose = false;
     bool first_iteration = true; 
@@ -178,12 +414,21 @@ void *elaborateSingleCamera(void *ptr)
     //profiling
     edge::Profiler prof(std::to_string(cam->id));
     
-
-    cv::VideoWriter boxes_video;
-    int w = data.width;
-    int h = data.height;
-    boxes_video.open("boxes_cam_"+std::to_string(data.camId)+".mp4", cv::VideoWriter::fourcc('M','P','4','V'), 30, cv::Size(w, h));
+    if (recordBoxes){
+        boxes_video.open("../data/output/boxes_cam" +
+                          std::to_string(data.camId)  + "_" + 
+                          std::to_string(data.width)  + "x" +
+                          std::to_string(data.height) + "_" +
+                          std::to_string(data.framesToProcess) + "frames.mp4",
+                          cv::VideoWriter::fourcc('M','P','4','V'), 30, cv::Size(data.width, data.height));
+    }
     
+    // Declaring UDP variables
+    std::vector<tk::dnn::box> box_vector;
+    std::vector<std::tuple<double, double>> coords;
+    std::vector<std::tuple<double, double>> coordsGeo;
+    std::vector<std::tuple<double, double, double, double, double, double, double, double>> boxCoords;
+    unsigned int n_frame=0;
 
     while(gRun){
         prof.tick("Total time");
@@ -241,27 +486,42 @@ void *elaborateSingleCamera(void *ptr)
             prof.tock("Inference");
 
             cam->detNN->draw(batch_frame);
-            boxes_video << frame;
+            if (recordBoxes) boxes_video << frame;
 
-            //feed the tracker
-            prof.tick("Tracker feeding");
-            cur_frame.clear();
-            for(auto d:detected){
-                if(checkClass(d.cl, cam->dataset)){
-                    convertCameraPixelsToMapMeters((d.x + d.w / 2)*scale_x, (d.y + d.h)*scale_y, d.cl, *cam, north, east);
-                    tracking::obj_m obj;
-                    obj.frame       = 0;
-                    obj.cl          = d.cl;
-                    obj.x           = north;
-                    obj.y           = east;
-                    pixel_prec_x    = (int)(d.x + d.w / 2)*err_scale_x > cam->precision.cols ? cam->precision.cols : (int)(d.x + d.w / 2)*err_scale_x;
-                    pixel_prec_y    = (int)(d.y + d.h)*err_scale_y > cam->precision.rows ? cam->precision.rows : (int)(d.y + d.h)*err_scale_y;
-                    obj.error       = !cam->precision.empty() ? cam->precision.at<float>(pixel_prec_y, pixel_prec_x) : 0.0;
-                    cur_frame.push_back(obj);
+            
+            if (!use_udp_socket){
+
+                //feed the tracker
+                prof.tick("Tracker feeding");
+                cur_frame.clear();
+                for(auto d:detected){
+                    if(checkClass(d.cl, cam->dataset)){
+                        convertCameraPixelsToMapMeters((d.x + d.w / 2)*scale_x, (d.y + d.h)*scale_y, d.cl, *cam, north, east);
+                        tracking::obj_m obj;
+                        obj.frame       = 0;
+                        obj.cl          = d.cl;
+                        obj.x           = north;
+                        obj.y           = east;
+                        pixel_prec_x    = (int)(d.x + d.w / 2)*err_scale_x > cam->precision.cols ? cam->precision.cols : (int)(d.x + d.w / 2)*err_scale_x;
+                        pixel_prec_y    = (int)(d.y + d.h)*err_scale_y > cam->precision.rows ? cam->precision.rows : (int)(d.y + d.h)*err_scale_y;
+                        obj.error       = !cam->precision.empty() ? cam->precision.at<float>(pixel_prec_y, pixel_prec_x) : 0.0;
+                        cur_frame.push_back(obj);
+                    }
                 }
+                t.track(cur_frame,tr_verbose);
+                prof.tock("Tracker feeding");
+            } else { // NOSOTROS NO EJECUTAMOS EL TRACKER
+                // box_vector: 4 esquinas en pixeles
+                // coords:convertToMeters -> north,east
+                // boxCoords: 4 esquinas coordenadas
+                // corrdsGeo: NO se usa
+                collectBoxInfo(cam->detNN->batchDetected, box_vector, coords, coordsGeo, boxCoords, scale_x, scale_y, *cam);
+                unsigned int size;
+                char *data = prepareMessageUDP(box_vector, coords, boxCoords, n_frame, cam->id,
+                                               cam->adfGeoTransform[3], cam->adfGeoTransform[0], // pasamos pto.ref
+                                               &size, scale_x, scale_y);
+                sendUDPMessage(sockfd, n_frame, data, &size);
             }
-            t.track(cur_frame,tr_verbose);
-            prof.tock("Tracker feeding");
 
             //feed the viewer
             prof.tick("Viewer feeding");
@@ -271,7 +531,9 @@ void *elaborateSingleCamera(void *ptr)
 
             prof.tick("Prepare message"); 
             //send the data if the message is not empty
-            prepareMessage(t, message, cam->geoConv, cam->id, cam->dataset, timestamp_acquisition);
+            if (!use_udp_socket){
+                prepareMessage(t, message, cam->geoConv, cam->id, cam->dataset, timestamp_acquisition);
+            }
 
             if (!message.objects.empty()){
                 communicator.send_message(&message, cam->portCommunicator);
@@ -285,13 +547,25 @@ void *elaborateSingleCamera(void *ptr)
         }
         else 
             usleep(1000);
+        
+        // Cleaning vars to UDP
+        box_vector.clear();
+        coords.clear();
+        coordsGeo.clear();
+        boxCoords.clear();
+        n_frame++;
+
     }
-    boxes_video.release();
+    
+    if (recordBoxes) boxes_video.release();
     pthread_join( video_cap, NULL);
 
     checkCuda( cudaFree(d_input));
     checkCuda( cudaFree(d_output));
     checkCuda( cudaFree(d_map1));
     checkCuda( cudaFree(d_map2));
+
+    if(use_udp_socket) close(sockfd);
+
     return (void *)0;
 }
