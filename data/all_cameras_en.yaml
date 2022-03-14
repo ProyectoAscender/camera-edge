@@ -1,22 +1,25 @@
 cameras:
-  - maskfile: !<!> ../data/masks/20936_mask.jpg
-    #input: !<!> /root/data/florencia/arcipressi/videos/elastic-arcipressi-tvcc-03-20220211-074501-3.mp4
-    input: !<!> /root/videos/hola.mp4
+  - maskfile: !<!> ../data/masks/20936_mask.jpg  
+    input: !<!> /root/data/modena/masa/videos/videoStream_6310.mp4
+    # input: !<!> /root/data/florencia/arcipressi/videos/crossingOut.mp4
     #resolution: !<!> 800x450
     cameraCalib: !<!> ../data/calib_cameras/20936.params
     id: 20936
     framesToProcess: 100
     portCommunicator: 8887
     encrypted: 0
-    pmatrix: !<!> ../data/pmat_new/pmat_07-03-20936_20p.txt
+    # pmatrix: !<!> /root/data/florencia/arcipressi/pmat/5p.txt
+    pmatrix: !<!> /root/data/modena/masa/pmat/pmat_07-03-6310_10p.txt
     maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg
-  - encrypted: 1
-    maskfile: !<!> ../data/masks/20937_mask.jpg
-    cameraCalib: !<!> ../data/calib_cameras/20937.params
-    pmatrix: !<!> ../data/pmat_new/pmat_07-03-20937_20p.txt
+  - maskfile: !<!> ../data/masks/20936_mask.jpg
+    input: !<!> /root/data/modena/masa/videos/videoStream_20937.mp4
+    #resolution: !<!> 800x450
+    cameraCalib: !<!> ../data/calib_cameras/20936.params
     id: 20937
-    input: !<!> "U2FsdGVkX1+9iqrN6hqxdsAZrETpIFKr69Qgv46TFI4mlMeNPA/BEEn5OcApDFZP\nNh/AcxPz3SC2rsBEjaEDVAKT6sK66+cwki+MWupx9CY=\n"
-    resolution: !<!> 800x450
+    framesToProcess: 100
+    portCommunicator: 8886
+    encrypted: 0
+    pmatrix: !<!> /root/data/modena/masa/pmat/pmat_07-03-20937_20p.txt
     maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg
   - input: !<!> "U2FsdGVkX1+jOM1yMtdOx+KYH4EcdPbiuwTtK1RirlBpOm9/rVTpWl0Z97QVFj66\nwd4EJRZUEAdbS0VZmP8uiVNpp2HN19T1sDlXaezUcUo=\n"
     resolution: !<!> 800x450
@@ -126,7 +129,8 @@ net: !<!> yolo4_berkeley_fp32.rt
 width: 960
 classes: 10
 type: !<!> y
-tif: !<!> ../data/masa_map.tif
+#tif: !<!> /root/data/florencia/arcipressi/tiff/Arcipressi_intersection_map.tif
+tif: !<!> /root/data/modena/masa/tiff/masa_map.tif
 height: 540
 password: ""
 filter: 1
