@@ -14,14 +14,17 @@
 
 TAG = r32.5.0
 PREFIX = registry.gitlab.bsc.es/ppc-bsc/software/camera-edge/
+PREFIX2 = bscppc/
 IMAGE = camera-edge
 
 all: push
 
 image:
 	docker build . -f Dockerfile.arm64 -t $(PREFIX)$(IMAGE):$(TAG)
+	docker image tag $(PREFIX)$(IMAGE):$(TAG) $(PREFIX2)$(IMAGE):$(TAG)
 
 push: image
 	docker push $(PREFIX)$(IMAGE):$(TAG)
+	docker push $(PREFIX2)$(IMAGE):$(TAG)
 
 clean:
