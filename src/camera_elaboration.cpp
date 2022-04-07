@@ -65,13 +65,13 @@ void collectBoxInfo( std::vector<std::vector<tk::dnn::box>>& batchDetected,
                 //                               east); // box center
                 // convertCameraPixelsToGeodetic(box.x + box.w/2, box.y + box.h/2, box.cl, camera, lat,
                 //                              lon); // box center
-                convertCameraPixelsToGeodetic(box.x + box.w, box.y, box.cl, camera, lat_ur,
+                convertCameraPixelsToGeodetic((box.x + box.w) * scale_x, box.y * scale_y, box.cl, camera, lat_ur,
                                               lon_ur); // box upper right corner
-                convertCameraPixelsToGeodetic(box.x + box.w, box.y + box.h, box.cl, camera, lat_lr,
+                convertCameraPixelsToGeodetic((box.x + box.w) * scale_x, (box.y + box.h) * scale_y, box.cl, camera, lat_lr,
                                               lon_lr); // box lower right corner
-                convertCameraPixelsToGeodetic(box.x, box.y + box.h, box.cl, camera, lat_ll,
+                convertCameraPixelsToGeodetic(box.x * scale_x, (box.y + box.h) * scale_y, box.cl, camera, lat_ll,
                                               lon_ll); // box lower left corner
-                convertCameraPixelsToGeodetic(box.x, box.y, box.cl, camera, lat_ul,
+                convertCameraPixelsToGeodetic(box.x * scale_x, box.y * scale_y, box.cl, camera, lat_ul,
                                               lon_ul); // box upper left corner
                 box_vector.push_back(box);
                 coords.push_back(std::make_tuple(north, east));
@@ -352,6 +352,7 @@ void *elaborateSingleCamera(void *ptr)
     pthread_t video_cap;
     edge::video_cap_data data;
     data.input          = (char*)cam->input.c_str();
+    std::cout<<"Camera input: "<< data.input << std::endl;
     data.width          = cam->streamWidth;
     data.height         = cam->streamHeight;
     data.camId          = cam->id;
@@ -437,17 +438,20 @@ void *elaborateSingleCamera(void *ptr)
         prof.tick("Copy frame");
         data.mtxF.lock();
         distort = data.frame.clone();
+        std::cout << " Copying in a new iteration" << std::endl;
+
         timestamp_acquisition = data.tStampMs;
         new_frame = data.frameConsumed;
         data.frameConsumed = true;
         data.mtxF.unlock();
         
         if(distort.data && !new_frame) {
+            n_frame++;
             prof.tock("Copy frame");
 
             //eventual undistort 
             prof.tick("Undistort");
-            if(cam->hasCalib){
+            if(false){
                 if (first_iteration){
                     cam->calibMat.at<double>(0,0)*=  double(cam->streamWidth) / double(cam->calibWidth);
                     cam->calibMat.at<double>(0,2)*=  double(cam->streamWidth) / double(cam->calibWidth);
@@ -475,6 +479,7 @@ void *elaborateSingleCamera(void *ptr)
             else{
                 frame = distort;
             }
+
             prof.tock("Undistort");
             batch_frame.push_back(frame);
             //inference
@@ -546,17 +551,22 @@ void *elaborateSingleCamera(void *ptr)
                 prof.printStats();  
         }
         else 
+            std::cout << " NO NEW FRAME " << std::endl;
             usleep(1000);
-        
+
         // Cleaning vars to UDP
         box_vector.clear();
         coords.clear();
         coordsGeo.clear();
         boxCoords.clear();
-        n_frame++;
+        
+        if (n_frame >= data.framesToProcess) {
+            std::cout << " ELABORATION: " << n_frame  << " processed" << std::endl;
+            break;
+        }
 
     }
-    
+    std::cout << " ELABORATION ended !!!!! Releasing boxes video" << std::endl;
     if (recordBoxes) boxes_video.release();
     pthread_join( video_cap, NULL);
 

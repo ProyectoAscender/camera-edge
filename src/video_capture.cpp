@@ -7,7 +7,10 @@ void *readVideoCapture( void *ptr )
     std::cout<<"Thread: "<<data->input<< " started" <<std::endl;
 
     auto stream_mode = data->gstreamer ? cv::CAP_GSTREAMER : cv::CAP_FFMPEG;
+    std::cout<<" data->gstreamer: "<<  data->gstreamer <<std::endl;
+    std::cout<<"stream_mode: "<<stream_mode <<std::endl;
     cv::VideoCapture cap(data->input, stream_mode);
+    std::cout<<"openCV RIGHT!: "<<stream_mode <<std::endl;
     if(!cap.isOpened())
         gRun = false; 
     else
@@ -22,14 +25,17 @@ void *readVideoCapture( void *ptr )
     if (record){
         int w = cap.get(cv::CAP_PROP_FRAME_WIDTH);
         int h = cap.get(cv::CAP_PROP_FRAME_HEIGHT);
-        result_video.open("video_cam_"+std::to_string(data->camId)+".mp4", cv::VideoWriter::fourcc('M','P','4','V'), 30, cv::Size(w, h));
+        result_video.open("../data/output/video_cam_"+std::to_string(data->camId)+"_"+std::to_string(w)+"_"+std::to_string(h)+"_"+std::to_string(data->framesToProcess)+"_frames.mp4", cv::VideoWriter::fourcc('M','P','4','V'), 30, cv::Size(w, h));
         video_timestamp.open ("timestamp_cam_"+std::to_string(data->camId)+".txt");
     }
 
     uint64_t timestamp_acquisition = 0;
     edge::Profiler prof("Video capture" + std::string(data->input));
+    unsigned int n_frame=0;
+
     while(gRun) {
-        if(!stream && !data->frameConsumed) {
+        if(!data->frameConsumed) {
+            std::cout<<" -> Sleeping. Frame consumed = " << data->frameConsumed << std::endl;
             usleep(1000);
             continue;
         }
@@ -54,19 +60,27 @@ void *readVideoCapture( void *ptr )
         data->frame         = resized_frame.clone();
         data->tStampMs      = timestamp_acquisition;
         data->frameConsumed = false;
+        std::cout << " -> Sended n_frame: " << n_frame  << "in thread" << std::endl;
         data->mtxF.unlock();
         prof.tock("Frame copy");
 
         if (record){
+            std::cout << " -> Recording result video" << std::endl;
             result_video << frame;
             video_timestamp << timestamp_acquisition << "\n";
         }
+        if (n_frame >= data->framesToProcess) {
+            std::cout << " -> " << n_frame  << " processed thread" << std::endl;
+            break;
+        }
+        n_frame++;
 
         // prof.printStats();
     }
 
     if(record){
         video_timestamp.close();
+        std::cout << " -> releasing video" << std::endl;
         result_video.release();
     }
     

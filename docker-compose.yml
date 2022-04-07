@@ -1,0 +1,28 @@
+version: "3.9"
+services:
+  object-detection:
+    image: registry.gitlab.bsc.es/ppc-bsc/software/camera-edge/camera-edge:r32.5.0
+    ports:
+      - "${TKDNN_PORT}:${TKDNN_PORT}/tcp"
+      - "${TKDNN_PORT}:${TKDNN_PORT}/udp"
+    volumes:
+      - /home/xavieragx1/camera-edge/:/root/repos/camera-edge/
+      - /root/repos/camera-edge/build
+      - /root/repos/camera-edge/tkDNN
+      - /root/repos/camera-edge/tkCommon
+      - /root/repos/camera-edge/class-tracker
+      - /root/repos/camera-edge/masa_protocol
+      #- ~/odt-containers/Videos:/root/videos
+      - /home/xavieragx1/data:/root/data
+    tty: true
+    network_mode: bridge
+    environment:
+      - TKDNN_PORT=${TKDNN_PORT}
+      - CAM_ID=${CAM_ID}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
+    # command: bash -c "cd /root/repos/camera-edge/build && cmake ../ && make -j && ./edge -i ../data/all_cameras_en.yaml -s0 -v 1 -u 1 ${CAM_ID} && exec bash"
+    command: bash -c "cd /root/repos/camera-edge/build && cmake ../ && make -j && ./edge -i ../data/all_cameras_en.yaml -s0 -v 1 -u 1 ${CAM_ID} && exec bash"

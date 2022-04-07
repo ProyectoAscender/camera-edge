@@ -20,3 +20,10 @@ data/6315/*
 data/634/*
 data/636/*
 data/637/*
+*.mp4
+*.mkv
+*.h264
+*.tif
+*.bin
+build*
+

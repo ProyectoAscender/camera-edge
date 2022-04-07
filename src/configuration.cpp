@@ -79,23 +79,23 @@ void readParamsFromYaml(const std::string& params_path, const std::vector<int>& 
         cameras_par[n_cameras-1].framesToProcess  = cameras_yaml[i]["framesToProcess"].as<int>();
         cameras_par[n_cameras-1].portCommunicator = cameras_yaml[i]["portCommunicator"].as<int>();
         
-        if(cameras_yaml[i]["gstreamer"])
-            cameras_par[n_cameras-1].gstreamer = cameras_yaml[i]["gstreamer"].as<bool>();
-        else
+        if(cameras_yaml[i]["gstreamer"].as<bool>()){
+            cameras_par[n_cameras-1].gstreamer = true;
+        }
+        else{
             cameras_par[n_cameras-1].gstreamer = false;
+        }
+
 
         if(cameras_par[n_cameras-1].gstreamer){
             // if it is a GStreamer stream it cannot be encrypted
-            cameras_par[n_cameras-1].input = "nvcamerasrc sensor-id=" + cameras_yaml[i]["gstreamer.device_id"].as<std::string>() + 
-                                             " intent=3 tnr-mode=1 tnr-strength=-1 edge-enhancement=-1 flicker=3 ! video/x-raw(memory:NVMM)" + 
-                                             ", width=(int)" + cameras_yaml[i]["gstreamer.width"].as<std::string>() +
-                                             ", height=(int)" + cameras_yaml[i]["gstreamer.height"].as<std::string>() +
-                                             ", framerate=(fraction)"+ cameras_yaml[i]["gstreamer.framerate"].as<std::string>() +
-                                             ", format=(string)I420 ! nvvidconv flip-method=0 ! video/x-raw" 
-                                             ", width=(int)" + cameras_yaml[i]["gstreamer.width"].as<std::string>() +
-                                             ", height=(int)" + cameras_yaml[i]["gstreamer.height"].as<std::string>() +
-                                             ", framerate=(fraction)"+ cameras_yaml[i]["gstreamer.framerate"].as<std::string>() +
-                                             ", format=(string)BGRx ! videoconvert ! video/x-raw, format=(string)BGR ! appsink drop=true";
+            cameras_par[n_cameras-1].input =  cameras_yaml[i]["input"].as<std::string>();
+                                            //   "rtspsrc location=" + cameras_yaml[i]["input"].as<std::string>() + " user-id=\XXX\" user-pw=\"XXX\" !" + 
+                                            //   " rtph264depay ! h264parse ! omxh264dec ! nvvidconv ! " +
+                                            //   "\"video/x-raw(memory:NVMM), width=(int)" + cameras_yaml[i]["gstreamer.width"].as<std::string>() + 
+                                            //   ", height=(int)" + cameras_yaml[i]["gstreamer.height"].as<std::string>() + 
+                                            //   ", format=(string)NV12\" ! appsink drop=true sync=false";
+                                              //"! omxh264enc bitrate=4000000 ! video/x-h264 !  h264parse ! qtmux ! filesink location=lolo.mp4 <- re-encode again
         }
         else{
             if (cameras_yaml[i]["encrypted"].as<int>()){

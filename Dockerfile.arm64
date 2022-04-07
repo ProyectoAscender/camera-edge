@@ -29,7 +29,7 @@ RUN mkdir repos
 
 WORKDIR /root/repos
 
-RUN apt-get install -y build-essential \
+RUN apt-get update -y && apt install -y build-essential \
     unzip \
     pkg-config \
     libjpeg-dev \
@@ -49,13 +49,15 @@ RUN apt-get install -y build-essential \
     libgstreamer1.0-dev \
     libgstreamer-plugins-base1.0-dev \
     libdc1394-22-dev \
-    libavresample-dev
+    libavresample-dev \
+    ffmpeg 
 
 RUN git clone https://github.com/opencv/opencv.git && git clone https://github.com/opencv/opencv_contrib.git
 
 RUN mkdir -p opencv/build
 
 WORKDIR /root/repos/opencv/build
+
 
 RUN cmake -D CMAKE_BUILD_TYPE=RELEASE \
     -D CMAKE_INSTALL_PREFIX=/usr/local \
@@ -73,6 +75,8 @@ RUN cmake -D CMAKE_BUILD_TYPE=RELEASE \
     -D WITH_GSTREAMER=ON \
     -D WITH_GSTREAMER_0_10=OFF \
     -D WITH_TBB=ON \
+    -D WITH_FFMPEG=ON \
+    -D BUILD_opencv_superres=ON \
     ../
 
 RUN make -j4
@@ -101,7 +105,7 @@ cd BUILD && \
 cmake .. && \
 make install -j4
 
-RUN wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py && \
+RUN wget https://bootstrap.pypa.io/pip/3.6/get-pip.py && python3 get-pip.py && \
     python3 -m pip install --upgrade pip && \
     apt install -y libzmq3-dev && \
     pip install pytest
