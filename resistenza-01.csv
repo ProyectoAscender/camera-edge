@@ -1,0 +1,3 @@
+filename,file_size,file_attributes,region_count,region_id,region_shape_attributes,region_attributes
+vlcsnap-2022-04-07-15h58m36s695.png,6864994,"{}",2,0,"{""name"":""polygon"",""all_points_x"":[1077,2084,2554,2772,1761],""all_points_y"":[1064,1724,1724,1224,824]}","{""type"":""cross""}"
+vlcsnap-2022-04-07-15h58m36s695.png,6864994,"{}",2,1,"{""name"":""polygon"",""all_points_x"":[3066,3064,2082,1014,295,476,1771],""all_points_y"":[1348,1708,1718,1024,387,354,805]}","{""type"":""tramway""}"
