@@ -88,14 +88,20 @@ void readParamsFromYaml(const std::string& params_path, const std::vector<int>& 
 
 
         if(cameras_par[n_cameras-1].gstreamer){
-            // if it is a GStreamer stream it cannot be encrypted
-            cameras_par[n_cameras-1].input =  cameras_yaml[i]["input"].as<std::string>();
-                                            //   "rtspsrc location=" + cameras_yaml[i]["input"].as<std::string>() + " user-id=\XXX\" user-pw=\"XXX\" !" + 
-                                            //   " rtph264depay ! h264parse ! omxh264dec ! nvvidconv ! " +
-                                            //   "\"video/x-raw(memory:NVMM), width=(int)" + cameras_yaml[i]["gstreamer.width"].as<std::string>() + 
-                                            //   ", height=(int)" + cameras_yaml[i]["gstreamer.height"].as<std::string>() + 
-                                            //   ", format=(string)NV12\" ! appsink drop=true sync=false";
-                                              //"! omxh264enc bitrate=4000000 ! video/x-h264 !  h264parse ! qtmux ! filesink location=lolo.mp4 <- re-encode again
+            //if it is a GStreamer stream it cannot be encrypted
+            // rtspsrc location=rtsp://admin:password@192.168.1.65:554 drop-on-latency=0 latency=10 !
+            // rtph264depay ! h264parse ! decodebin ! videoconvert! videoscale !
+            // video/x-raw, format=(string)BGR, width=(int){}, height=(int){},
+            // framerate=25/1 ! timeoverlay halignment=left valignment=bottom text ="Stream time:" 
+            // font-desc="Sans, 20"! clockoverlay ! absolutetimestamps ! 
+            // videoconvert ! appsink emit-signals=true sync=true max-buffers=3 drop=false
+            cameras_par[n_cameras-1].input =  "rtspsrc location=" + cameras_yaml[i]["input"].as<std::string>() + 
+                                              " latency=2000 ! queue ! rtph264depay ! h264parse ! omxh264dec !" + 
+                                              " nvvidconv ! video/x-raw,  width=(int)" + cameras_yaml[i]["gstreamer.width"].as<std::string>() + 
+                                              ", height=(int)" + cameras_yaml[i]["gstreamer.height"].as<std::string>() +
+                                              " format=BGRx ! videoconvert ! video/x-raw, format=BGR ! appsink drop=true sync=false";
+            // cameras_par[n_cameras-1].input =  cameras_yaml[i]["input"].as<std::string>();
+
         }
         else{
             if (cameras_yaml[i]["encrypted"].as<int>()){
@@ -281,7 +287,7 @@ void initializeCamerasNetworks(std:: vector<edge::camera>& cameras, const std::s
             default:
             FatalError("Network type not allowed\n");
         }
-        c.detNN->init(net, n_classes);
+        c.detNN->init(net, n_classes, 1, 0.9);
     }
 }
 
