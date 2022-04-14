@@ -55,15 +55,15 @@ set (WITH_MATPLOTLIB OFF CACHE BOOL "Disable matplotlib")
 
 add_subdirectory(tkDNN)
 add_subdirectory(tkCommon)
-add_subdirectory(class-tracker)
+add_subdirectory(tracker)
 
 #-------------------------------------------------------------------------------
 # Build libraries
 #-------------------------------------------------------------------------------
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include 
-                    ${CMAKE_CURRENT_SOURCE_DIR}/class-tracker/include
-                    ${CMAKE_CURRENT_SOURCE_DIR}/class-tracker/geodetic_utils/geodetic_utils/include/geodetic_utils 
+                    ${CMAKE_CURRENT_SOURCE_DIR}/tracker/include
+                    ${CMAKE_CURRENT_SOURCE_DIR}/tracker/geodetic_utils/geodetic_utils/include/geodetic_utils 
                     ${CMAKE_CURRENT_SOURCE_DIR}/tkDNN/include
                     ${CMAKE_CURRENT_SOURCE_DIR}/tkCommon/include
                     ${CMAKE_CURRENT_SOURCE_DIR}/masa_protocol/include
@@ -87,7 +87,7 @@ set(class-edge-LIBS ${CUDA_LIBRARIES}
                     yaml-cpp 
                     tkDNN 
                     tkCommon 
-                    class-tracker 
+                    tracker 
                     class-kernels 
                     ${ZeroMQ_LIBRARY}
                     )
