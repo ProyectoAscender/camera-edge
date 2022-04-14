@@ -87,7 +87,7 @@ set(class-edge-LIBS ${CUDA_LIBRARIES}
                     yaml-cpp 
                     tkDNN 
                     tkCommon 
-                    tracker 
+                    bsc-tracker 
                     class-kernels 
                     ${ZeroMQ_LIBRARY}
                     )
