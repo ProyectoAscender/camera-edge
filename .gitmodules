@@ -4,3 +4,6 @@
 [submodule "tracker"]
 	path = tracker
 	url = https://gitlab.bsc.es/ppc-bsc/software/tracker.git
+[submodule "tkCommon"]
+	path = tkCommon
+	url = https://github.com/ceccocats/tkCommon.git
