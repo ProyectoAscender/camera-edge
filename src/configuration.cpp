@@ -287,7 +287,7 @@ void initializeCamerasNetworks(std:: vector<edge::camera>& cameras, const std::s
             default:
             FatalError("Network type not allowed\n");
         }
-        c.detNN->init(net, n_classes, 1, 0.9);
+        c.detNN->init(net, n_classes, 1, 0.5);
     }
 }
 

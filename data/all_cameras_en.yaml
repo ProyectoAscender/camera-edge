@@ -1,15 +1,15 @@
 cameras:
   - maskfile: !<!> ../data/masks/20936_mask.jpg  
-    input: !<!> "rtsp://XXX0@XXX"
-    # input: !<!> /root/data/florencia/arcipressi/videos/crossingOut.mp4
+    #input: !<!> "rtsp://XXX:XXXX@XXXXXX"
+    input: !<!> /root/data/florencia/resistenza/videos/video_cam_20936_3072_1728_200_frames.mp4
     #resolution: !<!> 800x450
     cameraCalib: !<!> ../data/calib_cameras/20936.params
     id: 20936
-    gstreamer: true
-    gstreamer.device_id : 1
-    gstreamer.width : 3072 
-    gstreamer.height : 1728
-    gstreamer.framerate : 30
+    gstreamer: false
+    #gstreamer.device_id : 1
+    #gstreamer.width : 3072 
+    #gstreamer.height : 1728
+    #gstreamer.framerate : 30
     framesToProcess: 200
     portCommunicator: 8887
     encrypted: 0
@@ -140,5 +140,5 @@ height: 540
 password: ""
 filter: 1
 stream: 1
-record: 1
+record: 0
 recordBoxes: 0

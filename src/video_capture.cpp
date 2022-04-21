@@ -35,8 +35,8 @@ void *readVideoCapture( void *ptr )
 
     while(gRun) {
         if(!data->frameConsumed) {
-            std::cout<<" -> Sleeping. Frame consumed = " << data->frameConsumed << std::endl;
-            usleep(1000);
+            //std::cout<<" -> Sleeping. Frame consumed = " << data->frameConsumed << std::endl;
+            usleep(500);
             continue;
         }
         prof.tick("Frame acquisition");
@@ -60,12 +60,12 @@ void *readVideoCapture( void *ptr )
         data->frame         = resized_frame.clone();
         data->tStampMs      = timestamp_acquisition;
         data->frameConsumed = false;
-        std::cout << " -> Sended n_frame: " << n_frame  << "in thread" << std::endl;
+        //std::cout << " -> Sended n_frame: " << n_frame  << "in thread" << std::endl;
         data->mtxF.unlock();
         prof.tock("Frame copy");
 
         if (record){
-            std::cout << " -> Recording result video" << std::endl;
+            //std::cout << " -> Recording result video" << std::endl;
             result_video << frame;
             video_timestamp << timestamp_acquisition << "\n";
         }

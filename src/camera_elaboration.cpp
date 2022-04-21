@@ -21,7 +21,7 @@
 
 void sendUDPMessage(int sockfd,int n_frame, char* data, unsigned int *size ){
 
-    std::cout << "[" << n_frame << "] Processing frame..." << std::endl;
+    //std::cout << "[" << n_frame << "] Processing frame..." << std::endl;
 
     char clientname[1024] = "";
     struct sockaddr_in clientaddr = sockaddr_in();
@@ -30,7 +30,7 @@ void sendUDPMessage(int sockfd,int n_frame, char* data, unsigned int *size ){
     inet_ntop(AF_INET,&clientaddr.sin_addr,clientname,sizeof(clientname));
     std::string client_ip_str(clientname);
 
-    std::cout << "Client ip address: " << client_ip_str << std::endl;
+    //std::cout << "Client ip address: " << client_ip_str << std::endl;
 
     char buffer_recv[1024];
     int recv_error = recvfrom(sockfd, buffer_recv, 1024,
@@ -40,10 +40,10 @@ void sendUDPMessage(int sockfd,int n_frame, char* data, unsigned int *size ){
     inet_ntop(AF_INET,&clientaddr.sin_addr,clientname,sizeof(clientname));
     client_ip_str = std::string(clientname);
 
-    std::cout << "Client ip address after readfrom: " << client_ip_str << std::endl;
+    //std::cout << "Client ip address after readfrom: " << client_ip_str << std::endl;
 
     if (client_ip_str != "0.0.0.0"){
-        std::cout << "Sending data to " << client_ip_str << std::endl;
+        // std::cout << "Sending data to " << client_ip_str << std::endl;
         sendto(sockfd, (const char *)data, *size,MSG_DONTWAIT, (const struct sockaddr *) &clientaddr,sizeof(clientaddr));
     }
     free(data); 
@@ -438,7 +438,7 @@ void *elaborateSingleCamera(void *ptr)
         prof.tick("Copy frame");
         data.mtxF.lock();
         distort = data.frame.clone();
-        std::cout << " Copying in a new iteration" << std::endl;
+        //std::cout << " Copying in a new iteration" << std::endl;
 
         timestamp_acquisition = data.tStampMs;
         new_frame = data.frameConsumed;
@@ -551,8 +551,8 @@ void *elaborateSingleCamera(void *ptr)
                 prof.printStats();  
         }
         else 
-            std::cout << " NO NEW FRAME " << std::endl;
-            usleep(1000);
+            //std::cout << " NO NEW FRAME " << std::endl;
+            usleep(500);
 
         // Cleaning vars to UDP
         box_vector.clear();
