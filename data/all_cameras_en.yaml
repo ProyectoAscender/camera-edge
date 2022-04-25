@@ -13,7 +13,7 @@ cameras:
     framesToProcess: 200
     portCommunicator: 8887
     encrypted: 0
-    pmatrix: !<!> /root/data/florencia/arcipressi/pmat/arcipressi.txt
+    pmatrix: !<!> /root/data/florencia/resistenza/pmat/projMat.txt
     maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg
   - maskfile: !<!> ../data/masks/20936_mask.jpg
     input: !<!> /root/data/modena/masa/videos/videoStream_20937.mp4
