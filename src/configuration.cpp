@@ -460,7 +460,7 @@ std::vector<edge::camera> configure(int argc, char **argv)
         memcpy(c.adfGeoTransform, adfGeoTransform, 6 * sizeof(double) );
 
         //initialize the geodetic converter with a point in the MASA
-        c.geoConv.initialiseReference(44.655540, 10.934315, 0);
+        c.geoConv.initialiseReference(c.adfGeoTransform[3], c.adfGeoTransform[0], 0);
     }
     free(adfGeoTransform);    
 
