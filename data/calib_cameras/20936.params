@@ -1,8 +1,8 @@
 %YAML:1.0
 ---
 calibration_time: "Mon 06 May 2019 11:32:13 PM CEST"
-image_width: 3072
-image_height: 1728
+image_width: 1280
+image_height: 720
 board_width: 0
 board_height: 0
 square_size: 2.4799999237060547e+01

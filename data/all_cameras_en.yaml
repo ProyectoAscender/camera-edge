@@ -1,29 +1,34 @@
 cameras:
   - maskfile: !<!> ../data/masks/20936_mask.jpg  
-    #input: !<!> "rtsp://XXX:XXXX@XXXXXX"
-    input: !<!> /root/data/florencia/resistenza/videos/video_cam_20936_3072_1728_200_frames.mp4
+    input: !<!> "rtsp://X:X@X"
+    #input: !<!> /root/data/florencia/resistenza/videos/video_cam_20936_3072_1728_200_frames_Edu.mp4
+    #input: !<!> /root/data/florencia/resistenza/videos/video_cam_20936_1280_720_300_frames.mp4
     #resolution: !<!> 800x450
     cameraCalib: !<!> ../data/calib_cameras/20936.params
     id: 20936
-    gstreamer: false
-    #gstreamer.device_id : 1
-    #gstreamer.width : 3072 
-    #gstreamer.height : 1728
-    #gstreamer.framerate : 30
-    framesToProcess: 200
+    gstreamer: true
+    gstreamer.device_id : 1
+    gstreamer.width : 1280 
+    gstreamer.height : 720
+    gstreamer.framerate : 30
+    framesToProcess: 500
     portCommunicator: 8887
     encrypted: 0
     pmatrix: !<!> /root/data/florencia/resistenza/pmat/projMat.txt
     maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg
-  - maskfile: !<!> ../data/masks/20936_mask.jpg
-    input: !<!> /root/data/modena/masa/videos/videoStream_20937.mp4
-    #resolution: !<!> 800x450
+  - maskfile: !<!> ../data/masks/20936_mask.jpg  
+    input: !<!> "rtsp://X:X@X"
     cameraCalib: !<!> ../data/calib_cameras/20936.params
     id: 20937
-    framesToProcess: 100
+    gstreamer: true
+    gstreamer.device_id : 1
+    gstreamer.width : 1280 
+    gstreamer.height : 720
+    gstreamer.framerate : 30
+    framesToProcess: 500
     portCommunicator: 8886
     encrypted: 0
-    pmatrix: !<!> /root/data/modena/masa/pmat/pmat_07-03-20937_20p.txt
+    pmatrix: !<!> /root/data/florencia/resistenza/pmat/projMat.txt
     maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg
   - input: !<!> "U2FsdGVkX1+jOM1yMtdOx+KYH4EcdPbiuwTtK1RirlBpOm9/rVTp
    Wl0Z97QVFj66\nwd4EJRZUEAdbS0VZmP8uiVNpp2HN19T1sDlXaezUcUo=\n"
@@ -140,5 +145,5 @@ height: 540
 password: ""
 filter: 1
 stream: 1
-record: 0
+record: 1
 recordBoxes: 0

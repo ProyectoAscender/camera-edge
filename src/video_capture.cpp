@@ -1,4 +1,15 @@
 #include "video_capture.h"
+#include <sstream>
+#include <string>
+#include <ctime>
+
+std::string get_timestamp()
+{
+    auto now = std::time(nullptr);
+    std::ostringstream os;
+    os << std::put_time(std::gmtime(&now),"%F%T");
+    return os.str();
+}
 
 void *readVideoCapture( void *ptr )
 {
@@ -13,8 +24,6 @@ void *readVideoCapture( void *ptr )
     std::cout<<"openCV RIGHT!: "<<stream_mode <<std::endl;
     if(!cap.isOpened())
         gRun = false; 
-    else
-        std::cout<<"Camera correctly started.\n";
 
     const int new_width     = data->width;
     const int new_height    = data->height;
@@ -23,15 +32,22 @@ void *readVideoCapture( void *ptr )
     cv::VideoWriter result_video;
     std::ofstream video_timestamp;
     if (record){
+        auto now = std::chrono::system_clock::now();
         int w = cap.get(cv::CAP_PROP_FRAME_WIDTH);
         int h = cap.get(cv::CAP_PROP_FRAME_HEIGHT);
-        result_video.open("../data/output/video_cam_"+std::to_string(data->camId)+"_"+std::to_string(w)+"_"+std::to_string(h)+"_"+std::to_string(data->framesToProcess)+"_frames.mp4", cv::VideoWriter::fourcc('M','P','4','V'), 30, cv::Size(w, h));
+        result_video.open("../data/output/video_cam_" +
+                            std::to_string(data->camId)+ "_" + 
+                            std::to_string(w)+ "_" + 
+                            std::to_string(h)+ "_" + 
+                            std::to_string(data->framesToProcess) + "_frames_" + 
+                            get_timestamp() + ".mp4", 
+                           cv::VideoWriter::fourcc('M','P','4','V'), 30, cv::Size(w, h));
         video_timestamp.open ("timestamp_cam_"+std::to_string(data->camId)+".txt");
     }
 
     uint64_t timestamp_acquisition = 0;
+    unsigned int contador = 0;
     edge::Profiler prof("Video capture" + std::string(data->input));
-    unsigned int n_frame=0;
 
     while(gRun) {
         if(!data->frameConsumed) {
@@ -43,16 +59,19 @@ void *readVideoCapture( void *ptr )
         cap >> frame; 
         timestamp_acquisition = getTimeMs();
         prof.tock("Frame acquisition");
-        if(!frame.data) {
+        if(frame.empty()){
+            std::cerr<<"frame is empty"<<std::endl;
+        }
+        if(frame.empty()) {
             usleep(1000000); //us
             cap.open(data->input);
             printf("cap reinitialize\n");
-            break;
+            continue;
         } 
-        
         //resizing the image to 960x540 (the DNN takes in input 544x320)
         prof.tick("Frame resize");
         cv::resize (frame, resized_frame, cv::Size(new_width, new_height)); 
+         
         prof.tock("Frame resize");
 
         prof.tick("Frame copy");
@@ -60,7 +79,6 @@ void *readVideoCapture( void *ptr )
         data->frame         = resized_frame.clone();
         data->tStampMs      = timestamp_acquisition;
         data->frameConsumed = false;
-        //std::cout << " -> Sended n_frame: " << n_frame  << "in thread" << std::endl;
         data->mtxF.unlock();
         prof.tock("Frame copy");
 
@@ -69,14 +87,11 @@ void *readVideoCapture( void *ptr )
             result_video << frame;
             video_timestamp << timestamp_acquisition << "\n";
         }
-        if (n_frame >= data->framesToProcess) {
-            std::cout << " -> " << n_frame  << " processed thread" << std::endl;
-            break;
-        }
-        n_frame++;
 
         // prof.printStats();
     }
+    
+    std::cout << " -> video capture ended" << std::endl;
 
     if(record){
         video_timestamp.close();

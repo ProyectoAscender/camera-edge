@@ -18,7 +18,7 @@ void pixel2GPS(const int x, const int y, double &lat, double &lon, double* adfGe
 void GPS2pixel(double lat, double lon, int &x, int &y, double* adfGeoTransform);
 
 void convertCameraPixelsToGeodetic(const int x, const int y, const int cl, edge::camera& cam, double& lat, double& lon);
-void convertCameraPixelsToMapMeters(const int x, const int y, const int cl, edge::camera& cam, double& north, double& east);
+void convertCameraPixelsToMapMeters(const int x, const int y, const int cl, edge::camera& cam, double& east, double& north);
 std::vector<edge::tracker_line> getTrackingLines(const tracking::Tracking& t, edge::camera& cam,const float scale_x=1, const float scale_y=1, bool verbose=false);
 
 void prepareMessage(const tracking::Tracking& t, MasaMessage& message,tk::common::GeodeticConverter& geoConv, 

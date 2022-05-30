@@ -21,7 +21,6 @@
 
 void sendUDPMessage(int sockfd,int n_frame, char* data, unsigned int *size ){
 
-    //std::cout << "[" << n_frame << "] Processing frame..." << std::endl;
 
     char clientname[1024] = "";
     struct sockaddr_in clientaddr = sockaddr_in();
@@ -30,7 +29,6 @@ void sendUDPMessage(int sockfd,int n_frame, char* data, unsigned int *size ){
     inet_ntop(AF_INET,&clientaddr.sin_addr,clientname,sizeof(clientname));
     std::string client_ip_str(clientname);
 
-    //std::cout << "Client ip address: " << client_ip_str << std::endl;
 
     char buffer_recv[1024];
     int recv_error = recvfrom(sockfd, buffer_recv, 1024,
@@ -40,10 +38,8 @@ void sendUDPMessage(int sockfd,int n_frame, char* data, unsigned int *size ){
     inet_ntop(AF_INET,&clientaddr.sin_addr,clientname,sizeof(clientname));
     client_ip_str = std::string(clientname);
 
-    //std::cout << "Client ip address after readfrom: " << client_ip_str << std::endl;
 
     if (client_ip_str != "0.0.0.0"){
-        // std::cout << "Sending data to " << client_ip_str << std::endl;
         sendto(sockfd, (const char *)data, *size,MSG_DONTWAIT, (const struct sockaddr *) &clientaddr,sizeof(clientaddr));
     }
     free(data); 
@@ -55,12 +51,14 @@ void collectBoxInfo( std::vector<std::vector<tk::dnn::box>>& batchDetected,
                 std::vector<std::tuple<double, double, double, double, double, double, double, double>>& boxCoords,
                 float& scale_x, float& scale_y, edge::camera& camera)
 {
-    double lat_ur, lat_lr, lat_ll, lat_ul, lon_ur, lon_lr, lon_ll, lon_ul;
+    double lat_ur, lat_lr, lat_ll, lat_ul, lon_ur, lon_lr, lon_ll, lon_ul, debugLat, debugLong, debugLat2, debugLong2,debugAlt;
     double north, east;
 
     for (auto &box_batch : batchDetected) { // iterating per frame grouping
             for (auto &box : box_batch) { // iterating for boxes in frame
-                convertCameraPixelsToMapMeters((box.x + box.w / 2)*scale_x, (box.y + box.h)*scale_y, box.cl, camera, north, east);
+                convertCameraPixelsToMapMeters((box.x + box.w / 2)*scale_x, (box.y + box.h)*scale_y, box.cl, camera, east, north);
+                convertCameraPixelsToGeodetic( (box.x + box.w / 2)*scale_x, (box.y + box.h)*scale_y, box.cl, camera, debugLat, debugLong);
+                camera.geoConv.enu2Geodetic(east, north, 0, &debugLat2, &debugLong2, &debugAlt);
                 //convertCameraPixelsToMapMeters(box.x + box.w/2, box.y + box.h/2, box.cl, camera, north,
                 //                               east); // box center
                 // convertCameraPixelsToGeodetic(box.x + box.w/2, box.y + box.h/2, box.cl, camera, lat,
@@ -77,7 +75,6 @@ void collectBoxInfo( std::vector<std::vector<tk::dnn::box>>& batchDetected,
                 coords.push_back(std::make_tuple(north, east));
                 // coordsGeo.push_back(std::make_tuple(lat, lon));
                 boxCoords.push_back(std::make_tuple(lat_ur, lon_ur, lat_lr, lon_lr, lat_ll, lon_ll, lat_ul, lon_ul));
-                // printf("\t(%f,%f) converted to (%f,%f)\n", box.x, box.y, north, east);
             }
         }
 
@@ -159,7 +156,7 @@ void convertCameraPixelsToGeodetic(const int x, const int y, const int cl, edge:
     pixel2GPS(ll[0].x, ll[0].y, lat, lon, cam.adfGeoTransform);
 } 
 
-void convertCameraPixelsToMapMeters(const int x, const int y, const int cl, edge::camera& cam, double& north, double& east)
+void convertCameraPixelsToMapMeters(const int x, const int y, const int cl, edge::camera& cam, double& east, double& north)
 {
     double latitude, longitude;
     double up;
@@ -168,12 +165,13 @@ void convertCameraPixelsToMapMeters(const int x, const int y, const int cl, edge
     std::vector<cv::Point2f> x_y, ll;
     x_y.push_back(cv::Point2f(x, y));
     cv::perspectiveTransform(x_y, ll, cam.prjMat);
+    int precision = std::numeric_limits<double>::max_digits10;
 
     //tranform to map pixel into GPS
-    pixel2GPS(ll[0].x, ll[0].y, latitude, longitude, cam.adfGeoTransform);
+    //pixel2GPS(ll[0].x, ll[0].y, latitude, longitude, cam.adfGeoTransform);
 
     //conversion from GPS to meters 
-    cam.geoConv.geodetic2Enu(latitude, longitude, 0, &north, &east, &up);    
+    cam.geoConv.geodetic2Enu(ll[0].y, ll[0].x, 0, &east, &north, &up);    
 }
 
 std::vector<edge::tracker_line> getTrackingLines(const tracking::Tracking& t, edge::camera& cam, const float scale_x, const float scale_y, bool verbose){
@@ -405,6 +403,7 @@ void *elaborateSingleCamera(void *ptr)
 
     float scale_x   = cam->hasCalib ? (float)cam->calibWidth  / (float)cam->streamWidth : 1;
     float scale_y   = cam->hasCalib ? (float)cam->calibHeight / (float)cam->streamHeight: 1;
+
     float err_scale_x = !cam->precision.empty() ? (float)cam->precision.cols  / (float)cam->streamWidth: 1;
     float err_scale_y = !cam->precision.empty() ? (float)cam->precision.rows  / (float)cam->streamHeight: 1;
 
@@ -444,8 +443,8 @@ void *elaborateSingleCamera(void *ptr)
         new_frame = data.frameConsumed;
         data.frameConsumed = true;
         data.mtxF.unlock();
-        
-        if(distort.data && !new_frame) {
+        //std::cout << " ->ELABORATION  FRAME: " <<  distort.empty() << std::endl;
+        if(!distort.empty() && !new_frame) {
             n_frame++;
             prof.tock("Copy frame");
 
@@ -542,7 +541,6 @@ void *elaborateSingleCamera(void *ptr)
 
             if (!message.objects.empty()){
                 communicator.send_message(&message, cam->portCommunicator);
-                // std::cout<<"message sent!"<<std::endl;
             }
             prof.tock("Prepare message");   
 
@@ -551,7 +549,6 @@ void *elaborateSingleCamera(void *ptr)
                 prof.printStats();  
         }
         else 
-            //std::cout << " NO NEW FRAME " << std::endl;
             usleep(500);
 
         // Cleaning vars to UDP
@@ -560,12 +557,13 @@ void *elaborateSingleCamera(void *ptr)
         coordsGeo.clear();
         boxCoords.clear();
         
-        if (n_frame >= data.framesToProcess) {
+        if (n_frame >= data.framesToProcess ) {
             std::cout << " ELABORATION: " << n_frame  << " processed" << std::endl;
             break;
         }
 
     }
+    gRun = false;
     std::cout << " ELABORATION ended !!!!! Releasing boxes video" << std::endl;
     if (recordBoxes) boxes_video.release();
     pthread_join( video_cap, NULL);
