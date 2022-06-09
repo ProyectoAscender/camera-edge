@@ -7,7 +7,7 @@ std::string get_timestamp()
 {
     auto now = std::time(nullptr);
     std::ostringstream os;
-    os << std::put_time(std::gmtime(&now),"%F%T");
+    os << std::put_time(std::gmtime(&now),"%F_%T");
     return os.str();
 }
 

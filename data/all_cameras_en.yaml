@@ -1,7 +1,7 @@
 cameras:
   - maskfile: !<!> ../data/masks/20936_mask.jpg  
-    input: !<!> "rtsp://X:X@X"
-    #input: !<!> /root/data/florencia/resistenza/videos/video_cam_20936_3072_1728_200_frames_Edu.mp4
+    input: !<!> "rtsp://elasticva:F0r-V1d30@192.168.121.250"
+    #input: !<!> /root/data/florencia/resistenza/videos/video_cam_20936_1280_720_500_frames_2022-05-3015:10:21.mp4
     #input: !<!> /root/data/florencia/resistenza/videos/video_cam_20936_1280_720_300_frames.mp4
     #resolution: !<!> 800x450
     cameraCalib: !<!> ../data/calib_cameras/20936.params
@@ -11,13 +11,13 @@ cameras:
     gstreamer.width : 1280 
     gstreamer.height : 720
     gstreamer.framerate : 30
-    framesToProcess: 500
+    framesToProcess: 20000
     portCommunicator: 8887
     encrypted: 0
     pmatrix: !<!> /root/data/florencia/resistenza/pmat/projMat.txt
     maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg
   - maskfile: !<!> ../data/masks/20936_mask.jpg  
-    input: !<!> "rtsp://X:X@X"
+    input: !<!> "rtsp://elasticva:F0r-V1d30@192.168.121.251"
     cameraCalib: !<!> ../data/calib_cameras/20936.params
     id: 20937
     gstreamer: true
@@ -25,10 +25,10 @@ cameras:
     gstreamer.width : 1280 
     gstreamer.height : 720
     gstreamer.framerate : 30
-    framesToProcess: 500
+    framesToProcess: 20000
     portCommunicator: 8886
     encrypted: 0
-    pmatrix: !<!> /root/data/florencia/resistenza/pmat/projMat.txt
+    pmatrix: !<!> /root/data/florencia/resistenza/pmat/projMaj2.txt
     maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg
   - input: !<!> "U2FsdGVkX1+jOM1yMtdOx+KYH4EcdPbiuwTtK1RirlBpOm9/rVTp
    Wl0Z97QVFj66\nwd4EJRZUEAdbS0VZmP8uiVNpp2HN19T1sDlXaezUcUo=\n"
