@@ -1,6 +1,6 @@
 cameras:
   - maskfile: !<!> ../data/masks/20936_mask.jpg  
-    input: !<!> "rtsp://elasticva:F0r-V1d30@192.168.121.250"
+    input: !<!> "rtsp://X:X@192.168.121.250"
     #input: !<!> /root/data/florencia/resistenza/videos/video_cam_20936_1280_720_500_frames_2022-05-3015:10:21.mp4
     #input: !<!> /root/data/florencia/resistenza/videos/video_cam_20936_1280_720_300_frames.mp4
     #resolution: !<!> 800x450
@@ -17,7 +17,7 @@ cameras:
     pmatrix: !<!> /root/data/florencia/resistenza/pmat/projMat.txt
     maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg
   - maskfile: !<!> ../data/masks/20936_mask.jpg  
-    input: !<!> "rtsp://elasticva:F0r-V1d30@192.168.121.251"
+    input: !<!> "rtsp://X:X@192.168.121.251"
     cameraCalib: !<!> ../data/calib_cameras/20936.params
     id: 20937
     gstreamer: true
