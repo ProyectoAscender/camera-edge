@@ -1,25 +1,36 @@
 cameras:
   - maskfile: !<!> ../data/masks/20936_mask.jpg  
-    input: !<!> "rtsp://X:X@192.168.121.250"
-    #input: !<!> /root/data/florencia/resistenza/videos/video_cam_20936_1280_720_500_frames_2022-05-3015:10:21.mp4
-    #input: !<!> /root/data/florencia/resistenza/videos/video_cam_20936_1280_720_300_frames.mp4
+    #input: !<!> "rtsp://X:X@192.168.121.250"
+    input: !<!> /root/data/florencia/SCWC2022Videos/Arcipressi/Video_arcipressi_20936_abuelo.mp4
+    #input: !<!> /root/data/florencia/SCWC2022Videos/Resistenza/Video_resistenza_20936_pedestrian_tram.mp4
+    pmatrix: !<!> /root/data/florencia/arcipressi/pmat/projMat03.txt
+    #pmatrix: !<!> /root/data/florencia/resistenza/pmat/projMat.txt
     #resolution: !<!> 800x450
-    cameraCalib: !<!> ../data/calib_cameras/20936.params
+    #resolution: !<!> 1920x1080
+    cameraCalib: !<!> ../data/calib_cameras/20937.params
     id: 20936
-    gstreamer: true
-    gstreamer.device_id : 1
-    gstreamer.width : 1280 
-    gstreamer.height : 720
-    gstreamer.framerate : 30
-    framesToProcess: 20000
+    gstreamer: false
+    framesToProcess: 12000
     portCommunicator: 8887
     encrypted: 0
-    pmatrix: !<!> /root/data/florencia/resistenza/pmat/projMat.txt
+    maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg
+  - maskfile: !<!> ../data/masks/20936_mask.jpg  
+    input: !<!> /root/data/florencia/SCWC2022Videos/Batoni/Video_batoni_20937_abuela.mp4
+    #input: !<!> /root/data/florencia/resistenza/videos/video_cam_20936_1280_720_300_frames.mp4
+    #resolution: !<!> 800x450
+    #resolution: !<!> 1920x1080
+    cameraCalib: !<!> ../data/calib_cameras/20937.params
+    id: 20937
+    gstreamer: false
+    framesToProcess: 120000
+    portCommunicator: 8887
+    encrypted: 0
+    pmatrix: !<!> /root/data/florencia/batoni/pmat/projMat06.txt
     maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg
   - maskfile: !<!> ../data/masks/20936_mask.jpg  
     input: !<!> "rtsp://X:X@192.168.121.251"
     cameraCalib: !<!> ../data/calib_cameras/20936.params
-    id: 20937
+    id: 209377
     gstreamer: true
     gstreamer.device_id : 1
     gstreamer.width : 1280 
@@ -140,10 +151,10 @@ width: 960
 classes: 10
 type: !<!> y
 #tif: !<!> /root/data/florencia/arcipressi/tiff/Arcipressi_intersection_map.tif
-tif: !<!> /root/data/florencia/resistenza/tiff/resistenza.tif
+tif: !<!> /root/data/florencia/arcipressi/tiff/arcipressi.tif
 height: 540
 password: ""
 filter: 1
-stream: 1
-record: 1
-recordBoxes: 0
+stream: 0
+record: 0
+recordBoxes: 1

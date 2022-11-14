@@ -57,8 +57,8 @@ void collectBoxInfo( std::vector<std::vector<tk::dnn::box>>& batchDetected,
     for (auto &box_batch : batchDetected) { // iterating per frame grouping
             for (auto &box : box_batch) { // iterating for boxes in frame
                 convertCameraPixelsToMapMeters((box.x + box.w / 2)*scale_x, (box.y + box.h)*scale_y, box.cl, camera, east, north);
-                convertCameraPixelsToGeodetic( (box.x + box.w / 2)*scale_x, (box.y + box.h)*scale_y, box.cl, camera, debugLat, debugLong);
-                camera.geoConv.enu2Geodetic(east, north, 0, &debugLat2, &debugLong2, &debugAlt);
+                // convertCameraPixelsToGeodetic( (box.x + box.w / 2)*scale_x, (box.y + box.h)*scale_y, box.cl, camera, debugLat, debugLong);
+                // camera.geoConv.enu2Geodetic(east, north, 0, &debugLat2, &debugLong2, &debugAlt);
                 //convertCameraPixelsToMapMeters(box.x + box.w/2, box.y + box.h/2, box.cl, camera, north,
                 //                               east); // box center
                 // convertCameraPixelsToGeodetic(box.x + box.w/2, box.y + box.h/2, box.cl, camera, lat,
@@ -75,6 +75,8 @@ void collectBoxInfo( std::vector<std::vector<tk::dnn::box>>& batchDetected,
                 coords.push_back(std::make_tuple(north, east));
                 // coordsGeo.push_back(std::make_tuple(lat, lon));
                 boxCoords.push_back(std::make_tuple(lat_ur, lon_ur, lat_lr, lon_lr, lat_ll, lon_ll, lat_ul, lon_ul));
+                std::cout << std::setprecision (15)  << "WAAAAAAAAAAAAAAAAA: "<< lat_ur << " " << lon_ur << " " <<std::endl;
+
             }
         }
 
@@ -90,7 +92,7 @@ int openUDPsockets(std::string& socketPort){
     struct sockaddr_in servaddr;
     int sockfd;
     
-    std::cout << "Listening to tcp://0.0.0.0:" << socketPort << " waiting for COMPSs ack to start" << std::endl;
+    std::cout << "Listdening to tcp://0.0.0.0:" << socketPort << " waiting for COMPSs ack to start" << std::endl;
     zmq::socket_t *app_socket = new zmq::socket_t(context, ZMQ_REP);
     app_socket->bind("tcp://0.0.0.0:" + socketPort);
     app_socket->recv(&unimportant_message); // wait for python workflow to ack to start processing frames
@@ -145,7 +147,7 @@ void GPS2pixel(double lat, double lon, int &x, int &y, double* adfGeoTransform)
 
 void convertCameraPixelsToGeodetic(const int x, const int y, const int cl, edge::camera& cam, double& lat, double& lon)
 {
-    double up;
+    double up, a ,b;
 
     //transform camera pixel into georeferenced map pixel
     std::vector<cv::Point2f> x_y, ll;
@@ -153,7 +155,8 @@ void convertCameraPixelsToGeodetic(const int x, const int y, const int cl, edge:
     cv::perspectiveTransform(x_y, ll, cam.prjMat);
 
     //transform to map pixel into GPS
-    pixel2GPS(ll[0].x, ll[0].y, lat, lon, cam.adfGeoTransform);
+    lon = ll[0].x;
+    lat = ll[0].y;
 } 
 
 void convertCameraPixelsToMapMeters(const int x, const int y, const int cl, edge::camera& cam, double& east, double& north)
@@ -165,13 +168,14 @@ void convertCameraPixelsToMapMeters(const int x, const int y, const int cl, edge
     std::vector<cv::Point2f> x_y, ll;
     x_y.push_back(cv::Point2f(x, y));
     cv::perspectiveTransform(x_y, ll, cam.prjMat);
-    int precision = std::numeric_limits<double>::max_digits10;
 
     //tranform to map pixel into GPS
     //pixel2GPS(ll[0].x, ll[0].y, latitude, longitude, cam.adfGeoTransform);
 
     //conversion from GPS to meters 
-    cam.geoConv.geodetic2Enu(ll[0].y, ll[0].x, 0, &east, &north, &up);    
+    cam.geoConv.geodetic2Enu(ll[0].y, ll[0].x, 0, &east, &north, &up);
+    std::cout << std::setprecision (15)  << "convertCameraPixelsToMapMeters: "<< north << " " << up << x_y <<std::endl;
+
 }
 
 std::vector<edge::tracker_line> getTrackingLines(const tracking::Tracking& t, edge::camera& cam, const float scale_x, const float scale_y, bool verbose){
@@ -521,6 +525,7 @@ void *elaborateSingleCamera(void *ptr)
                 // corrdsGeo: NO se usa
                 collectBoxInfo(cam->detNN->batchDetected, box_vector, coords, coordsGeo, boxCoords, scale_x, scale_y, *cam);
                 unsigned int size;
+                std::cout << std::setprecision (15)  << "INIT POINT!: "<< cam->adfGeoTransform[3] << " " << cam->adfGeoTransform[0] << " " <<std::endl;
                 char *data = prepareMessageUDP(box_vector, coords, boxCoords, n_frame, cam->id,
                                                cam->adfGeoTransform[3], cam->adfGeoTransform[0], // pasamos pto.ref
                                                &size, scale_x, scale_y);

@@ -26,4 +26,5 @@ data/637/*
 *.tif
 *.bin
 build*
+scripts/
 

@@ -359,8 +359,11 @@ void readTiff(const std::string& path, double *adfGeoTransform)
     poDataset = (GDALDataset *)GDALOpen(path.c_str(), GA_ReadOnly);
     if (poDataset != NULL)
     {
+        std::cout << " -- -- BBBBBBB " << std::endl;
         poDataset->GetGeoTransform(adfGeoTransform);
     }
+    std::cout << " -- -- AAAAAAAAAAAAAAAAAA " << std::endl;
+
 }
 
 void readCaches(edge::camera& cam){
@@ -448,7 +451,7 @@ std::vector<edge::camera> configure(int argc, char **argv)
     readTiff(tif_map_path, adfGeoTransform);
     if(verbose){
         for(int i=0; i<6; i++)
-            std::cout<<adfGeoTransform[i]<<" ";
+            std::cout<<adfGeoTransform[i]<<" ;;";
         std::cout<<std::endl;
     }
     
@@ -461,7 +464,7 @@ std::vector<edge::camera> configure(int argc, char **argv)
 
         //initialize the geodetic converter with a point in the MASA
         c.geoConv.initialiseReference(c.adfGeoTransform[3], c.adfGeoTransform[0], 0);
-        std::cout << " -- -- CAM INIT REFERENCE " << c.adfGeoTransform[3] << " " << c.adfGeoTransform[0] << std::endl;
+        std::cout << " -- -- CAM INIT REFERENCE " << c.adfGeoTransform[3] << " " << c.adfGeoTransform[0] << " " << c.adfGeoTransform[1] << " " << c.adfGeoTransform[2] << std::endl;
 
     }
     free(adfGeoTransform);    
