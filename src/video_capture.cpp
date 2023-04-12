@@ -22,8 +22,11 @@ void *readVideoCapture( void *ptr )
     std::cout<<"stream_mode: "<<stream_mode <<std::endl;
     cv::VideoCapture cap(data->input, stream_mode);
     std::cout<<"openCV RIGHT!: "<<stream_mode <<std::endl;
-    if(!cap.isOpened())
+    if(!cap.isOpened()){
+
+        std::cout << " -> CASO 1 " << std::endl;
         gRun = false; 
+    }
 
     const int new_width     = data->width;
     const int new_height    = data->height;
@@ -48,7 +51,7 @@ void *readVideoCapture( void *ptr )
     uint64_t timestamp_acquisition = 0;
     unsigned int contador = 0;
     edge::Profiler prof("Video capture" + std::string(data->input));
-
+    std::cout << " -> CASO VC - pre while " << gRun << std::endl;
     while(gRun) {
         if(!data->frameConsumed) {
             //std::cout<<" -> Sleeping. Frame consumed = " << data->frameConsumed << std::endl;

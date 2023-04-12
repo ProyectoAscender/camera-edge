@@ -144,6 +144,7 @@ RUN cd build/tkDNN && \
     ./test_yolo4_berkeley && \
     mv yolo4_berkeley ../
 
+RUN apt-get install -y gdb
 
 # # COMPSS added in this dockerfile for PAI Project. 
 # RUN python3 -m pip install dataclay pymap3d zmq requests pygeohash geolib 

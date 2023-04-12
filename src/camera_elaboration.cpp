@@ -17,6 +17,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+using std::cin;
 
 
 void sendUDPMessage(int sockfd,int n_frame, char* data, unsigned int *size ){
@@ -56,6 +57,14 @@ void collectBoxInfo( std::vector<std::vector<tk::dnn::box>>& batchDetected,
 
     for (auto &box_batch : batchDetected) { // iterating per frame grouping
             for (auto &box : box_batch) { // iterating for boxes in frame
+                std::cout << "\n" << std::endl;
+                std::cout << "convertCameraPixelsToMapMeters: box.x + box.w / 2) * scale_x" << std::endl;
+                std::cout << " --> " << box.x << " + " << box.w << "/ 2)*" << scale_x << " = " << (box.x + box.w / 2)*scale_x <<std::endl;
+                std::cout << "\n" << std::endl;
+                std::cout << "convertCameraPixelsToMapMeters: (box.y + box.h ) * scale_y: " << std::endl;
+                std::cout << " --> " << box.y << " + " <<  box.h << " * " << scale_x << " = " << (box.y + box.h)*scale_y << std::endl;
+                std::cout << "\n" << std::endl;
+
                 convertCameraPixelsToMapMeters((box.x + box.w / 2)*scale_x, (box.y + box.h)*scale_y, box.cl, camera, east, north);
                 // convertCameraPixelsToGeodetic( (box.x + box.w / 2)*scale_x, (box.y + box.h)*scale_y, box.cl, camera, debugLat, debugLong);
                 // camera.geoConv.enu2Geodetic(east, north, 0, &debugLat2, &debugLong2, &debugAlt);
@@ -174,7 +183,9 @@ void convertCameraPixelsToMapMeters(const int x, const int y, const int cl, edge
 
     //conversion from GPS to meters 
     cam.geoConv.geodetic2Enu(ll[0].y, ll[0].x, 0, &east, &north, &up);
-    std::cout << std::setprecision (15)  << "convertCameraPixelsToMapMeters: "<< north << " " << up << x_y <<std::endl;
+    std::cout << std::setprecision (15)  << "MapMeters: "<< north << " " << east << " " << x_y  << " " <<std::endl;
+    std::cout << std::setprecision (15)  << "from lat: "<< ll[0].y << " long: " << ll[0].x <<std::endl;
+    std::cout << std::setprecision (15)  << "from x: "<< x << " y: " << y <<std::endl;
 
 }
 
@@ -257,9 +268,6 @@ char* prepareMessageUDP(std::vector<tk::dnn::box> &box_vector, std::vector<std::
     for (int i = box_vector.size() - 1; i >= 0; i--) {
         // if traffic signs or traffic lights
 
-        /*std::cout << "In removing boxes: pixel x: " << box_vector[i].x << " pixel y: " << box_vector[i].y <<
-            " north: " << std::get<0>(coords[i]) << " east: " << std::get<1>(coords[i]) <<
-            " lat: " << std::get<0>(coordsGeo[i]) << " lon: " << std::get<1>(coordsGeo[i]) << std::endl;*/
         if (box_vector[i].cl == 7 || box_vector[i].cl == 8 || box_vector[i].cl == 6) {
 
             box_vector.erase(box_vector.begin()+i);
@@ -285,6 +293,8 @@ char* prepareMessageUDP(std::vector<tk::dnn::box> &box_vector, std::vector<std::
     data += sizeof(double);
     float box_x, box_y, box_w, box_h;
     for (int i = 0; i < box_vector.size(); i++) {
+    std::cout << "Preparing UDP Meesage: pixel x: " << box_vector[i].x << " pixel y: " << box_vector[i].y <<
+        " north: " << std::get<0>(coords[i]) << " east: " << std::get<1>(coords[i]) << std::endl;
         tk::dnn::box box = box_vector[i];
         std::tuple<double, double> coord = coords[i];
         double north = std::get<0>(coord);
@@ -300,6 +310,7 @@ char* prepareMessageUDP(std::vector<tk::dnn::box> &box_vector, std::vector<std::
         data += sizeof(double);
         memcpy(data, &lon, sizeof(double));
         data += sizeof(double);*/
+     std::cout << "Preparing -UDP- Meesage: n_frame: " << n_frame << std::endl;    
         memcpy(data, &n_frame, sizeof(unsigned int));
         data += sizeof(unsigned int);
         memcpy(data, &box.cl, sizeof(char));
@@ -408,6 +419,12 @@ void *elaborateSingleCamera(void *ptr)
     float scale_x   = cam->hasCalib ? (float)cam->calibWidth  / (float)cam->streamWidth : 1;
     float scale_y   = cam->hasCalib ? (float)cam->calibHeight / (float)cam->streamHeight: 1;
 
+    std::cout << std::setprecision (15)  << "ESCALA X: "<<  (float)cam->calibWidth << " / " << (float)cam->streamWidth << " =  " << scale_x << std::endl;
+    std::cout << std::setprecision (15)  << "ESCALA Y: "<<  (float)cam->calibHeight << " / " << (float)cam->streamHeight << " =  " << scale_y <<std::endl;
+    std::cout << std::setprecision (15)  << "--- > " << cam->hasCalib << std::endl;
+
+
+
     float err_scale_x = !cam->precision.empty() ? (float)cam->precision.cols  / (float)cam->streamWidth: 1;
     float err_scale_y = !cam->precision.empty() ? (float)cam->precision.rows  / (float)cam->streamHeight: 1;
 
@@ -433,7 +450,7 @@ void *elaborateSingleCamera(void *ptr)
     std::vector<std::tuple<double, double>> coordsGeo;
     std::vector<std::tuple<double, double, double, double, double, double, double, double>> boxCoords;
     unsigned int n_frame=0;
-
+    std::cout << " -> CASO CE - pre while " << gRun << std::endl;
     while(gRun){
         prof.tick("Total time");
         batch_frame.clear();
@@ -450,7 +467,11 @@ void *elaborateSingleCamera(void *ptr)
         //std::cout << " ->ELABORATION  FRAME: " <<  distort.empty() << std::endl;
         if(!distort.empty() && !new_frame) {
             n_frame++;
+            
+            if (n_frame % 10 == 0){
+
             prof.tock("Copy frame");
+            std::cout << "A: n_frame = " << n_frame <<std::endl;
 
             //eventual undistort 
             prof.tick("Undistort");
@@ -495,6 +516,7 @@ void *elaborateSingleCamera(void *ptr)
 
             cam->detNN->draw(batch_frame);
             if (recordBoxes) boxes_video << frame;
+            std::cout << "B: n_frame = " << n_frame <<std::endl;
 
             
             if (!use_udp_socket){
@@ -529,6 +551,18 @@ void *elaborateSingleCamera(void *ptr)
                 char *data = prepareMessageUDP(box_vector, coords, boxCoords, n_frame, cam->id,
                                                cam->adfGeoTransform[3], cam->adfGeoTransform[0], // pasamos pto.ref
                                                &size, scale_x, scale_y);
+                // std::cout << std::setprecision (15)  << "BOX VECTOR: "<< box_vector[0].x << " " <<  box_vector[0].y << " -- "<< box_vector[1].x << " " <<  box_vector[1].y << " " <<std::endl;
+               
+                // std::cout << "In removing boxes: pixel x: " << box_vector[0].x << " pixel y: " << box_vector[0].y <<
+                // " north: " << std::get<0>(coords[0]) << " east: " << std::get<1>(coords[0]) <<
+                std::cout << "Press Enter to continue…" << std::endl;
+                // cin.get();
+                // std::cout << "Press Enter to continue…" << std::endl;
+                // cin.get();
+                // std::cout << "Press Enter to continue…" << std::endl;
+                // cin.get();
+                // " lat: " << std::get<0>(coordsGeo[0]) << " lon: " << std::get<1>(coordsGeo[0]) << std::endl;
+                std::cout << "C: n_frame = " << n_frame <<std::endl;
                 sendUDPMessage(sockfd, n_frame, data, &size);
             }
 
@@ -552,6 +586,7 @@ void *elaborateSingleCamera(void *ptr)
             prof.tock("Total time");   
             if (verbose) 
                 prof.printStats();  
+            }
         }
         else 
             usleep(500);
