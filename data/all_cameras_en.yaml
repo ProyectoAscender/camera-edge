@@ -6,7 +6,7 @@ cameras:
     pmatrix: !<!> /root/florencia/arcipressi/pmat/projMat03.txt
     # pmatrix: !<!> /root/data/florencia/resistenza/pmat/projMat.txt
     #resolution: !<!> 800x450
-    # resolution: !<!> 1080x720
+    resolution: !<!> 1920x1080
     cameraCalib: !<!> ../data/calib_cameras/20936.params
     id: 20936
     gstreamer: false
@@ -44,19 +44,22 @@ cameras:
     portCommunicator: 8886
     encrypted: 0
     maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg
-  - maskfile: !<!> ../data/masks/20936_mask.jpg  
-    input: !<!> "rtsp://X:X@192.168.121.251"
-    cameraCalib: !<!> ../data/calib_cameras/20936.params
-    id: 209377
+  - maskfile: !<!> ../data/masks/20935_mask.jpg  
+    #input: !<!> "rtsp://X:X@192.168.121.250"
+    input: !<!> "rtsp://X:X@192.168.50.112"
+    # input: !<!> /root/data/florencia/SCWC2022Videos/Resistenza/Video_resistenza_20936_pedestrian_tram.mp4
+    pmatrix: !<!> /root/florencia/arcipressi/pmat/projMat03.txt
+    # pmatrix: !<!> /root/data/florencia/resistenza/pmat/projMat.txt
+    #resolution: !<!> 800x450
+    # resolution: !<!> 1080x720
+    cameraCalib: !<!> ../data/calib_cameras/20935.params
+    id: 20935
     gstreamer: true
-    gstreamer.device_id : 1
-    gstreamer.width : 1280 
-    gstreamer.height : 720
-    gstreamer.framerate : 30
-    framesToProcess: 20000
+    gstreamer.height: 1920
+    gstreamer.width: 1080
+    framesToProcess: 18068
     portCommunicator: 8886
     encrypted: 0
-    pmatrix: !<!> /root/data/florencia/resistenza/pmat/projMaj2.txt
     maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg
   - input: !<!> "U2FsdGVkX1/jSKrPhQkIxgMLWOBaW1euVOMbYD3FIPK0KkwRobKVGxu5JbS5KeZD\n5i8JCFsAf268QSU9kF+BLecgmuGvff3FWGutiwQGJ7Y=\n"
     resolution: !<!> 800x450
@@ -158,11 +161,10 @@ net: !<!> yolo4_berkeley_fp32.rt
 width: 960
 classes: 10
 type: !<!> y
-#tif: !<!> /root/data/florencia/arcipressi/tiff/Arcipressi_intersection_map.tif
 tif: !<!> /root/florencia/batoni/tiff/batoni.tif
 height: 540
 password: ""
 filter: 1
-stream: 0
+stream: 1
 record: 0
 recordBoxes: 1
