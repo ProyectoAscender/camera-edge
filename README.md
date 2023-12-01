@@ -42,6 +42,9 @@ cd build
 cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ..
 make -j4
 ```
+## How to launch container
+docker run --name edge01 -p 8886:8886 -v ~/camera-edge/:/root/repos/camera-edge/ -v /root/repos/camera-edge/build -v /root/repos/camera-edge/tkDNN -v /
+root/repos/camera-edge/tkCommon -v /root/repos/camera-edge/tracker -v /root/repos/camera-edge/masa_protocol -v /media/b2drop/smartCity:/root/ -it bscppc/camera-edge:r32.5.0 /bin/bash
 
 ## How to launch the edge
 
@@ -51,7 +54,7 @@ In general (use ./edge -h for help)
 ```
 Example:
 ```
-./edge -i ../data/all_cameras_en.yaml 20939 20940 20936 6310 634
+./edge -i ../data/all_cameras_en.yaml -s0 -v 1 -u 1 0001  
 ```
 
 To better understand the parameter file, refer to [config doc](data/README.md).

@@ -1,4 +1,130 @@
 cameras:
+  - maskfile: !<!> ../data/masks/0001_mask.jpg  
+    #input: !<!> "rtsp://X:X@192.168.121.250"
+    input: !<!> /root/barcelona/idelfons/videos/20230721_092248_cam01h264.mp4
+    # input: !<!> /root/data/florencia/SCWC2022Videos/Resistenza/Video_resistenza_20936_pedestrian_tram.mp4
+    pmatrix: !<!> /root/barcelona/idelfons/pmat/projMat0001_4pts_centro.txt
+    # pmatrix: !<!> /root/data/florencia/resistenza/pmat/projMat.txt
+    #resolution: !<!> 800x450
+    cameraCalib: !<!> ../data/calib_cameras/10936.params
+    id: 1111
+    gstreamer: false
+    framesToProcess: 116013
+    portCommunicator: 8885
+    encrypted: 0
+    maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg
+  - maskfile: !<!> ../data/masks/0001_mask.jpg  
+    #input: !<!> "rtsp://X:X@192.168.121.250"
+    input: !<!> /root/barcelona/idelfons/videos/20230721_092250_cam02h264_.mp4
+    # input: !<!> /root/data/florencia/SCWC2022Videos/Resistenza/Video_resistenza_20936_pedestrian_tram.mp4
+    pmatrix: !<!> /root/barcelona/idelfons/pmat/projMat0002_5pts_centro.txt
+    # pmatrix: !<!> /root/data/florencia/resistenza/pmat/projMat.txt
+    #resolution: !<!> 800x450
+    cameraCalib: !<!> ../data/calib_cameras/10936.params
+    id: 1112
+    gstreamer: false
+    framesToProcess: 116013
+    portCommunicator: 8885
+    encrypted: 0
+    maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg
+  # - maskfile: !<!> ../data/masks/0001_mask.jpg  
+  #   #input: !<!> "rtsp://X:X@192.168.121.250"
+  #   input: !<!> /root/barcelona/placidia/videos/IMG_22_0_.MP4
+  #   # input: !<!> /root/data/florencia/SCWC2022Videos/Resistenza/Video_resistenza_20936_pedestrian_tram.mp4
+  #   pmatrix: !<!> /root/barcelona/urgell/pmat/projMat0001.txt
+  #   # pmatrix: !<!> /root/data/florencia/resistenza/pmat/projMat.txt
+  #   #resolution: !<!> 800x450
+  #   cameraCalib: !<!> ../data/calib_cameras/10936.params
+  #   id: 22
+  #   gstreamer: false
+  #   framesToProcess: 1182
+  #   portCommunicator: 8886
+  #   encrypted: 0
+  #   maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg
+  # - maskfile: !<!> ../data/masks/0001_mask.jpg  
+  #   #input: !<!> "rtsp://X:X@192.168.121.250"
+  #   input: !<!> /root/barcelona/placidia/videos/IMG_325896_.MP4
+  #   # input: !<!> /root/data/florencia/SCWC2022Videos/Resistenza/Video_resistenza_20936_pedestrian_tram.mp4
+  #   pmatrix: !<!> /root/barcelona/urgell/pmat/projMat0001.txt
+  #   # pmatrix: !<!> /root/data/florencia/resistenza/pmat/projMat.txt
+  #   #resolution: !<!> 800x450
+  #   cameraCalib: !<!> ../data/calib_cameras/10936.params
+  #   id: 325896
+  #   gstreamer: false
+  #   framesToProcess: 2875
+  #   portCommunicator: 8886
+  #   encrypted: 0
+  #   maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg
+  # - maskfile: !<!> ../data/masks/0001_mask.jpg  
+    #input: !<!> "rtsp://X:X@192.168.121.250"
+    # input: !<!> /root/barcelona/placidia/videos/IMG_191388_0_.MP4
+    # # input: !<!> /root/data/florencia/SCWC2022Videos/Resistenza/Video_resistenza_20936_pedestrian_tram.mp4
+    # pmatrix: !<!> /root/barcelona/urgell/pmat/projMat0001.txt
+    # # pmatrix: !<!> /root/data/florencia/resistenza/pmat/projMat.txt
+    # #resolution: !<!> 800x450
+    # cameraCalib: !<!> ../data/calib_cameras/10936.params
+    # id: 191388
+    # gstreamer: false
+    # framesToProcess: 1721
+    # portCommunicator: 8886
+    # encrypted: 0
+    # maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg
+  - maskfile: !<!> ../data/masks/0001_mask.jpg  
+    #input: !<!> "rtsp://X:X@192.168.121.250"
+    input: !<!> /root/barcelona/placidia/videos/IMG_00_.MP4
+    # input: !<!> /root/data/florencia/SCWC2022Videos/Resistenza/Video_resistenza_20936_pedestrian_tram.mp4
+    pmatrix: !<!> /root/barcelona/urgell/pmat/projMat0001.txt
+    # pmatrix: !<!> /root/data/florencia/resistenza/pmat/projMat.txt
+    #resolution: !<!> 800x450
+    cameraCalib: !<!> ../data/calib_cameras/10936.params
+    id: 0002
+    gstreamer: false
+    framesToProcess: 908
+    portCommunicator: 8886
+    encrypted: 0
+    maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg
+  # - maskfile: !<!> ../data/masks/0001_mask.jpg  
+  #   #input: !<!> "rtsp://X:X@192.168.121.250"
+  #   input: !<!> /root/barcelona/urgell/videos/IMG_0001.mp4
+  #   # input: !<!> /root/data/florencia/SCWC2022Videos/Resistenza/Video_resistenza_20936_pedestrian_tram.mp4
+  #   pmatrix: !<!> /root/barcelona/urgell/pmat/projMat0001.txt
+  #   # pmatrix: !<!> /root/data/florencia/resistenza/pmat/projMat.txt
+  #   #resolution: !<!> 800x450
+  #   cameraCalib: !<!> ../data/calib_cameras/10936.params
+  #   id: 0001
+  #   gstreamer: false
+  #   framesToProcess: 842
+  #   portCommunicator: 8886
+  #   encrypted: 0
+  #   maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg
+  - maskfile: !<!> ../data/masks/20936_mask.jpg  
+    #input: !<!> "rtsp://X:X@192.168.121.250"
+    input: !<!> /root/barcelona/urgell/videos/IMG_339498.mp4
+    # input: !<!> /root/data/florencia/SCWC2022Videos/Resistenza/Video_resistenza_20936_pedestrian_tram.mp4
+    pmatrix: !<!> /root/barcelona/urgell/pmat/projMat339498.txt
+    # pmatrix: !<!> /root/data/florencia/resistenza/pmat/projMat.txt
+    #resolution: !<!> 800x450
+    cameraCalib: !<!> ../data/calib_cameras/10936.params
+    id: 339498
+    gstreamer: false
+    framesToProcess: 1136
+    portCommunicator: 8886
+    encrypted: 0
+    maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg
+  - maskfile: !<!> ../data/masks/10936_mask.jpg  
+    #input: !<!> "rtsp://X:X@192.168.121.250"
+    input: !<!> /root/barcelona/urgell/scouting/IMG_6857_.mp4
+    # input: !<!> /root/data/florencia/SCWC2022Videos/Resistenza/Video_resistenza_20936_pedestrian_tram.mp4
+    pmatrix: !<!> /root/florencia/arcipressi/pmat/projMat03.txt
+    # pmatrix: !<!> /root/data/florencia/resistenza/pmat/projMat.txt
+    #resolution: !<!> 800x450
+    cameraCalib: !<!> ../data/calib_cameras/10936.params
+    id: 10936
+    gstreamer: false
+    framesToProcess: 378
+    portCommunicator: 8886
+    encrypted: 0
+    maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg
   - maskfile: !<!> ../data/masks/20936_mask.jpg  
     #input: !<!> "rtsp://X:X@192.168.121.250"
     input: !<!> /root/florencia/arcipressi/videos/elastic-arcipressi-tvcc-03-20220211-074501-0_2.mp4
@@ -6,12 +132,12 @@ cameras:
     pmatrix: !<!> /root/florencia/arcipressi/pmat/projMat03.txt
     # pmatrix: !<!> /root/data/florencia/resistenza/pmat/projMat.txt
     #resolution: !<!> 800x450
-    resolution: !<!> 1920x1080
+    # resolution: !<!> 1920x1080
     cameraCalib: !<!> ../data/calib_cameras/20936.params
     id: 20936
     gstreamer: false
-    framesToProcess: 18068
-    portCommunicator: 8886
+    framesToProcess: 150
+    portCommunicator: 8885
     encrypted: 0
     maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg
   - maskfile: !<!> ../data/masks/20939_mask.jpg  
@@ -165,6 +291,6 @@ tif: !<!> /root/florencia/batoni/tiff/batoni.tif
 height: 540
 password: ""
 filter: 1
-stream: 1
+stream: 0
 record: 0
 recordBoxes: 1

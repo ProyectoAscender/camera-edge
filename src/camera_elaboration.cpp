@@ -468,7 +468,7 @@ void *elaborateSingleCamera(void *ptr)
         if(!distort.empty() && !new_frame) {
             n_frame++;
             
-            if (n_frame % 10 == 0){
+            if (n_frame % 1 == 0){
 
             prof.tock("Copy frame");
             std::cout << "A: n_frame = " << n_frame <<std::endl;
@@ -555,7 +555,7 @@ void *elaborateSingleCamera(void *ptr)
                
                 // std::cout << "In removing boxes: pixel x: " << box_vector[0].x << " pixel y: " << box_vector[0].y <<
                 // " north: " << std::get<0>(coords[0]) << " east: " << std::get<1>(coords[0]) <<
-                std::cout << "Press Enter to continue…" << std::endl;
+                // std::cout << "Press Enter to continue…" << std::endl;
                 // cin.get();
                 // std::cout << "Press Enter to continue…" << std::endl;
                 // cin.get();

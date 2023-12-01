@@ -500,8 +500,8 @@ std::vector<edge::camera> configure(int argc, char **argv)
         c.adfGeoTransform = (double *)malloc(6 * sizeof(double));
         memcpy(c.adfGeoTransform, adfGeoTransform, 6 * sizeof(double));
 
-        c.adfGeoTransform[3] = 41.389785079848316;
-        c.adfGeoTransform[0] = 2.1148747285077834;
+        c.adfGeoTransform[3] = 41.365663;
+        c.adfGeoTransform[0] = 2.134057;
         // initialize the geodetic converter with a point in the MASA
         c.geoConv.initialiseReference(c.adfGeoTransform[3], c.adfGeoTransform[0], 0);
         std::cout << " -- -- CAM INIT REFERENCE " << c.adfGeoTransform[3] << " " << c.adfGeoTransform[0] << " " << c.adfGeoTransform[1] << " " << c.adfGeoTransform[2] << std::endl;
