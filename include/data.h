@@ -7,8 +7,7 @@
 #include <fstream>
 
 #include "tkCommon/common.h"
-#include "tkCommon/geodetic_conv.h"
-#include "tkDNN/DetectionNN.h"
+// #include "tkDNN/DetectionNN.h"
 #include "EdgeViewer.h"
 
 #define MAX_CAMERAS 10
@@ -44,7 +43,7 @@ struct camera{
     cv::Mat			                precision;
     std::string                     input               = "";
     std::string                     ipCommunicator      = "172.17.0.3";
-    tk::dnn::DetectionNN*           detNN               = nullptr;  
+    // tk::dnn::DetectionNN*           detNN               = nullptr;  
     tk::common::GeodeticConverter   geoConv; 
     double*                         adfGeoTransform     = nullptr;
     std::string                     id                  = "0";

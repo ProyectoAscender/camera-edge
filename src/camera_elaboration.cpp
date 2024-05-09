@@ -574,11 +574,11 @@ void *elaborateSingleCamera(void *ptr)
             prof.tick("Inference");
             dnn_input.clear();
             dnn_input.push_back(frame.clone());
-            cam->detNN->update(dnn_input);
-            detected = cam->detNN->detected;
+            // cam->detNN->update(dnn_input);
+            // detected = cam->detNN->detected;
             prof.tock("Inference");
 
-            cam->detNN->draw(batch_frame);
+            // cam->detNN->draw(batch_frame);
             if (recordBoxes) boxes_video << frame;
             std::cout << "B: n_frame = " << n_frame <<std::endl;
 
@@ -586,7 +586,7 @@ void *elaborateSingleCamera(void *ptr)
             if (use_udp_socket){
 
                 // box_vector: 4 esquinas en pixeles
-                collectBoxInfo(cam->detNN->batchDetected, box_vector, coords, coordsGeo, boxCoords, scale_x, scale_y, *cam);
+                // collectBoxInfo(cam->detNN->batchDetected, box_vector, coords, coordsGeo, boxCoords, scale_x, scale_y, *cam);
                 unsigned int size;
                 std::cout << std::setprecision (15)  << "INIT POINT!: "<< cam->adfGeoTransform[3] << " " << cam->adfGeoTransform[0] << " " <<std::endl;
                 // Send data trough UDP: box_vector.size()

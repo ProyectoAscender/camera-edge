@@ -31,8 +31,8 @@ int main(int argc, char **argv)
         viewer = new edge::EdgeViewer(cameras.size());
         viewer->setWindowName("Cameras");
         viewer->setBackground(tk::gui::color::DARK_GRAY);
-        viewer->setClassesNames(cameras[0].detNN->classesNames);
-        viewer->setColors(cameras[0].detNN->classes);
+        // viewer->setClassesNames(cameras[0].detNN->classesNames);
+        // viewer->setColors(cameras[0].detNN->classes);
         viewer->initOnThread();    
     }
 

@@ -11,7 +11,7 @@
 #include"video_capture.h"
 #include"message.h"
 
-#include "tkDNN/DetectionNN.h"
+// #include "tkDNN/DetectionNN.h"
 
 
 void pixel2GPS(const int x, const int y, double &lat, double &lon, double* adfGeoTransform);
