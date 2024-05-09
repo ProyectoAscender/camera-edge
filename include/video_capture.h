@@ -21,7 +21,7 @@ struct video_cap_data
     std::mutex mtxF;
     int width           = 0;
     int height          = 0;
-    int camId           = 0;
+    std::string camId         = "0";
     int framesToProcess = -1;
     bool frameConsumed  = false;
     bool gstreamer      = false;

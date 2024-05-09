@@ -19,8 +19,15 @@
 
 using std::cin;
 
+// void CharToByte(char* char_arr, unsigned char* unsigned_char_arr, unsigned int count){
+//     for(unsigned int i = 0; i < count; i++){
+//         unsigned_char_arr[i]= static_cast<unsigned char>(char_arr[i]);
+//         }
+// }
 
-void sendUDPMessage(int sockfd,int n_frame, char* data, unsigned int *size ){
+
+
+void sendUDPMessage(int sockfd, char* data ){
 
 
     char clientname[1024] = "";
@@ -33,15 +40,20 @@ void sendUDPMessage(int sockfd,int n_frame, char* data, unsigned int *size ){
 
     char buffer_recv[1024];
     int recv_error = recvfrom(sockfd, buffer_recv, 1024,
-        MSG_DONTWAIT, ( struct sockaddr *) &clientaddr,
+        MSG_WAITALL, ( struct sockaddr *) &clientaddr,
         &len);
 
     inet_ntop(AF_INET,&clientaddr.sin_addr,clientname,sizeof(clientname));
     client_ip_str = std::string(clientname);
 
+    std::cout << "****************-------------Preparing UDP Meesage const:"  <<  (const char *)data <<  std::endl;
+    
 
+    
+    size_t data_size = strlen((const char *)data);
+    // printBufferHex((const char *)data, data_size);
     if (client_ip_str != "0.0.0.0"){
-        sendto(sockfd, (const char *)data, *size,MSG_DONTWAIT, (const struct sockaddr *) &clientaddr,sizeof(clientaddr));
+        sendto(sockfd, (const char *)data, strlen(data),MSG_DONTWAIT, (const struct sockaddr *) &clientaddr,sizeof(clientaddr));
     }
     free(data); 
 }
@@ -57,13 +69,13 @@ void collectBoxInfo( std::vector<std::vector<tk::dnn::box>>& batchDetected,
 
     for (auto &box_batch : batchDetected) { // iterating per frame grouping
             for (auto &box : box_batch) { // iterating for boxes in frame
-                std::cout << "\n" << std::endl;
-                std::cout << "convertCameraPixelsToMapMeters: box.x + box.w / 2) * scale_x" << std::endl;
-                std::cout << " --> " << box.x << " + " << box.w << "/ 2)*" << scale_x << " = " << (box.x + box.w / 2)*scale_x <<std::endl;
-                std::cout << "\n" << std::endl;
-                std::cout << "convertCameraPixelsToMapMeters: (box.y + box.h ) * scale_y: " << std::endl;
-                std::cout << " --> " << box.y << " + " <<  box.h << " * " << scale_x << " = " << (box.y + box.h)*scale_y << std::endl;
-                std::cout << "\n" << std::endl;
+                // std::cout << "\n" << std::endl;
+                // std::cout << "convertCameraPixelsToMapMeters: box.x + box.w / 2) * scale_x" << std::endl;
+                // std::cout << " --> " << box.x << " + " << box.w << "/ 2)*" << scale_x << " = " << (box.x + box.w / 2)*scale_x <<std::endl;
+                // std::cout << "\n" << std::endl;
+                // std::cout << "convertCameraPixelsToMapMeters: (box.y + box.h ) * scale_y: " << std::endl;
+                // std::cout << " --> " << box.y << " + " <<  box.h << " * " << scale_x << " = " << (box.y + box.h)*scale_y << std::endl;
+                // std::cout << "\n" << std::endl;
 
                 convertCameraPixelsToMapMeters((box.x + box.w / 2)*scale_x, (box.y + box.h)*scale_y, box.cl, camera, east, north);
                 // convertCameraPixelsToGeodetic( (box.x + box.w / 2)*scale_x, (box.y + box.h)*scale_y, box.cl, camera, debugLat, debugLong);
@@ -80,6 +92,8 @@ void collectBoxInfo( std::vector<std::vector<tk::dnn::box>>& batchDetected,
                                               lon_ll); // box lower left corner
                 convertCameraPixelsToGeodetic(box.x * scale_x, box.y * scale_y, box.cl, camera, lat_ul,
                                               lon_ul); // box upper left corner
+                if (box.x < 0) box.x = 0;
+                if (box.y < 0) box.y = 0;
                 box_vector.push_back(box);
                 coords.push_back(std::make_tuple(north, east));
                 // coordsGeo.push_back(std::make_tuple(lat, lon));
@@ -183,9 +197,9 @@ void convertCameraPixelsToMapMeters(const int x, const int y, const int cl, edge
 
     //conversion from GPS to meters 
     cam.geoConv.geodetic2Enu(ll[0].y, ll[0].x, 0, &east, &north, &up);
-    std::cout << std::setprecision (15)  << "MapMeters: "<< north << " " << east << " " << x_y  << " " <<std::endl;
-    std::cout << std::setprecision (15)  << "from lat: "<< ll[0].y << " long: " << ll[0].x <<std::endl;
-    std::cout << std::setprecision (15)  << "from x: "<< x << " y: " << y <<std::endl;
+    // std::cout << std::setprecision (15)  << "MapMeters: "<< north << " " << east << " " << x_y  << " " <<std::endl;
+    // std::cout << std::setprecision (15)  << "from lat: "<< ll[0].y << " long: " << ll[0].x <<std::endl;
+    // std::cout << std::setprecision (15)  << "from x: "<< x << " y: " << y <<std::endl;
 
 }
 
@@ -229,33 +243,69 @@ std::vector<edge::tracker_line> getTrackingLines(const tracking::Tracking& t, ed
     return lines;
 }
 
-void prepareMessage(const tracking::Tracking& t, MasaMessage& message, tk::common::GeodeticConverter& geoConv, 
-                    const int cam_id, edge::Dataset_t dataset, uint64_t t_stamp_acquisition_ms)
-{
-    message.objects.clear();
-    double latitude, longitude, altitude;
-    std::vector<int> cam_id_vector {cam_id};
-    std::vector<int> obj_id_vector;
-    int i = 0;
-    for(auto tr: t.trackers){
-        if(tr.predList.size()){
-            //convert from meters to GPS
-            i = tr.predList.size() -1;
-            geoConv.enu2Geodetic(tr.predList[i].x, tr.predList[i].y, 0, &latitude, &longitude, &altitude);
-            //add RoadUser to the message
-            if(checkClass(tr.cl, dataset)){
-                
-                obj_id_vector.push_back(tr.id);
-                RoadUser tmp = getRoadUser(cam_id_vector, latitude, longitude, obj_id_vector, tr.predList[i].vel, tr.predList[i].yaw, tr.traj.back().error, tr.cl, dataset);
-                message.objects.push_back(tmp);
-                obj_id_vector.clear();
-            }
-                
+char* prepareMessageUDP2(std::vector<tk::dnn::box> &box_vector, unsigned int n_frame, std::string cam_id, 
+                         float scale_x, float scale_y) {
+    
+    char* buffer= new char[60  * box_vector.size()];
+    // unsigned char* Bytes = new unsigned char[41  * box_vector.size()];
+    // We need to keep pointer initial position
+    char *buffer_origin = buffer; 
+    unsigned long long timestamp = getTimeMs();
+    
+    // Not sending if traffic signs or traffic lights, 
+    for (int i = box_vector.size() - 1; i >= 0; i--) {
+        if (box_vector[i].cl == 7 || box_vector[i].cl == 8 || box_vector[i].cl == 6) {
+            box_vector.erase(box_vector.begin()+i);
         }
     }
-    message.cam_idx = cam_id;
-    message.t_stamp_ms = t_stamp_acquisition_ms;
-    message.num_objects = message.objects.size();
+
+    for (int i = 0; i < box_vector.size(); i++) {
+
+        // Imprimir la longitud de cada campo por separado
+        // std::cout << "Flag: " << true << ", Length: " << snprintf(nullptr, 0, "%1dx", true) << " - bytes: " << sizeof(true) << std::endl;
+        // std::cout << "Cam_id: " << cam_id << ", Length: " << snprintf(nullptr, 0, "%2dx", cam_id) << " - bytes: " << sizeof(cam_id) << std::endl;
+        // std::cout << "N_frame: " << n_frame << ", Length: " << snprintf(nullptr, 0, "%4dx", n_frame) << " - bytes: " << sizeof(n_frame) << std::endl;
+        // std::cout << "Timestamp: " << timestamp << ", Length: " << snprintf(nullptr, 0, "%016lx", timestamp) << " - bytes: " << sizeof(timestamp) << std::endl;
+        // std::cout << "Cl: " << box_vector[i].cl << ", Length: " << snprintf(nullptr, 0, "%02xdx", box_vector[i].cl) << " - bytes: " << sizeof(box_vector[i].cl) << std::endl;
+        // std::cout << "Prob: " << box_vector[i].prob << ", Length: " << snprintf(nullptr, 0, "%03.1f", box_vector[i].prob) << " - bytes: " << sizeof(box_vector[i].prob) << std::endl; 
+        // std::cout << "XorigBox: " << box_vector[i].x  << std::endl; 
+        // std::cout << "X: " << int(box_vector[i].x * scale_x) << ", Length: " << snprintf(nullptr, 0, "%04d", int(box_vector[i].x * scale_x)) << " - bytes: " << sizeof(int(box_vector[i].x * scale_x)) << std::endl; 
+        // std::cout << "Y: " << int(box_vector[i].y * scale_y) << ", Length: " << snprintf(nullptr, 0, "%04d", int(box_vector[i].y * scale_y)) << " - bytes: " << sizeof(int(box_vector[i].y * scale_y)) << std::endl; 
+        // std::cout << "W: " << int(box_vector[i].w * scale_x) << ", Length: " << snprintf(nullptr, 0, "%04d", int(box_vector[i].w * scale_x)) << " - bytes: " << sizeof(int(box_vector[i].w * scale_x)) << std::endl; 
+        // std::cout << "H: " << int(box_vector[i].h * scale_y) << ", Length: " << snprintf(nullptr, 0, "%04d", int(box_vector[i].h * scale_y)) << " - bytes: " << sizeof(int(box_vector[i].h * scale_y)) << std::endl; 
+
+            std::string result;
+            for(int i = 0; i < cam_id.size(); i++) {
+                char buffer[20];
+                sprintf(buffer, "%X ", cam_id[i]);
+                result += buffer;
+            }
+            std::cout << "hexval1: " << result << std::endl;
+            
+            
+            
+            // unsigned char* cam_id2 = cam_id.c_str();
+            // std::cout << "hexval___: " <<  cam_id2  << std::endl;
+
+        //flag, cam_id , n_frame, timestamp , box_x, box_y, box_w, box_h, score, class
+        // size_t size_of_data = snprintf(buffer, 60, "%02x%04x%04x%016lx%04x%08lx%04x%04x%04x%04x",
+        size_t size_of_data = snprintf(buffer, 60, "%02x%02x%02x%02x%02x%04x%016lx%04x%04x%04x%04x%08lx%04x",
+                true, cam_id[0], cam_id[1], cam_id[2], cam_id[3], n_frame, timestamp, 
+                int(box_vector[i].x * scale_x), int(box_vector[i].y * scale_y), 
+                int(box_vector[i].w * scale_x), int(box_vector[i].h * scale_y),
+                 *(unsigned long*)&box_vector[i].prob, box_vector[i].cl);
+        std::cout << "Preparing UDP Meesage of length "  << size_of_data  <<  std::endl;
+        std::cout << "Preparing UDP Meesage Content BUFFER- :"  << buffer <<  std::endl;
+        // Set position at the end of the buffer to insert there next iteration
+        buffer += size_of_data ;
+        std::cout << "Preparing UDP Meesage TOTAL:"  << strlen(buffer_origin) <<  std::endl;
+
+    }
+
+
+
+    return buffer_origin;
+
 }
 
 char* prepareMessageUDP(std::vector<tk::dnn::box> &box_vector, std::vector<std::tuple<double, double>> &coords,
@@ -374,6 +424,7 @@ void *elaborateSingleCamera(void *ptr)
     data.gstreamer      = cam->gstreamer;
     MasaMessage message;
     Communicator<MasaMessage> communicator;
+        std::cout<<"Starting camera: "<< cam->id << std::endl;
 
     if(show)
         viewer->bindCamera(cam->id, &cam->show);
@@ -389,8 +440,21 @@ void *elaborateSingleCamera(void *ptr)
         communicator.open_client_socket((char*)cam->ipCommunicator.c_str(), cam->portCommunicator);
         int socket = communicator.get_socket();
     } else {
+        // Client handshake and sending cam Info
         std::string camCommunicatorPort = std::to_string(cam->portCommunicator);
+        std::cout << "- - - - -> WAITING FOR UDP HANDSHAKE  " << std::endl;
         sockfd = openUDPsockets(camCommunicatorPort);
+
+        // const char *camData[100] = "Send this with UDP";
+        char* camData= new char[245];
+        std::cout << "- - - - -> SENDING DATA INFO :::: "<< data.camId << std::endl;
+        size_t size_of_data = snprintf(camData, 245, "%s|%s|%d|%d|%d|%d|%s",
+                                       "Send this with UDP: ",
+                                       data.camId.c_str(), data.gstreamer, cam->framesToProcess, 
+                                       data.height, data.width, data.input);
+        std::cout << "- - - - -> SENDING DATA INFO  " << std::endl;
+        sendUDPMessage(sockfd, camData);
+
     }
     
     //initiate the tracker
@@ -433,11 +497,11 @@ void *elaborateSingleCamera(void *ptr)
     float *d_map1, *d_map2;
 
     //profiling
-    edge::Profiler prof(std::to_string(cam->id));
+    edge::Profiler prof(cam->id);
     
     if (recordBoxes){
         boxes_video.open("../data/output/boxes_cam" +
-                          std::to_string(data.camId)  + "_" + 
+                          data.camId  + "_" + 
                           std::to_string(data.width)  + "x" +
                           std::to_string(data.height) + "_" +
                           std::to_string(data.framesToProcess) + "frames.mp4",
@@ -511,59 +575,28 @@ void *elaborateSingleCamera(void *ptr)
             dnn_input.clear();
             dnn_input.push_back(frame.clone());
             cam->detNN->update(dnn_input);
-            detected= cam->detNN->detected;
+            detected = cam->detNN->detected;
             prof.tock("Inference");
 
             cam->detNN->draw(batch_frame);
             if (recordBoxes) boxes_video << frame;
             std::cout << "B: n_frame = " << n_frame <<std::endl;
 
-            
-            if (!use_udp_socket){
 
-                //feed the tracker
-                prof.tick("Tracker feeding");
-                cur_frame.clear();
-                for(auto d:detected){
-                    if(checkClass(d.cl, cam->dataset)){
-                        convertCameraPixelsToMapMeters((d.x + d.w / 2)*scale_x, (d.y + d.h)*scale_y, d.cl, *cam, north, east);
-                        tracking::obj_m obj;
-                        obj.frame       = 0;
-                        obj.cl          = d.cl;
-                        obj.x           = north;
-                        obj.y           = east;
-                        pixel_prec_x    = (int)(d.x + d.w / 2)*err_scale_x > cam->precision.cols ? cam->precision.cols : (int)(d.x + d.w / 2)*err_scale_x;
-                        pixel_prec_y    = (int)(d.y + d.h)*err_scale_y > cam->precision.rows ? cam->precision.rows : (int)(d.y + d.h)*err_scale_y;
-                        obj.error       = !cam->precision.empty() ? cam->precision.at<float>(pixel_prec_y, pixel_prec_x) : 0.0;
-                        cur_frame.push_back(obj);
-                    }
-                }
-                t.track(cur_frame,tr_verbose);
-                prof.tock("Tracker feeding");
-            } else { // NOSOTROS NO EJECUTAMOS EL TRACKER
+            if (use_udp_socket){
+
                 // box_vector: 4 esquinas en pixeles
-                // coords:convertToMeters -> north,east
-                // boxCoords: 4 esquinas coordenadas
-                // corrdsGeo: NO se usa
                 collectBoxInfo(cam->detNN->batchDetected, box_vector, coords, coordsGeo, boxCoords, scale_x, scale_y, *cam);
                 unsigned int size;
                 std::cout << std::setprecision (15)  << "INIT POINT!: "<< cam->adfGeoTransform[3] << " " << cam->adfGeoTransform[0] << " " <<std::endl;
-                char *data = prepareMessageUDP(box_vector, coords, boxCoords, n_frame, cam->id,
-                                               cam->adfGeoTransform[3], cam->adfGeoTransform[0], // pasamos pto.ref
-                                               &size, scale_x, scale_y);
-                // std::cout << std::setprecision (15)  << "BOX VECTOR: "<< box_vector[0].x << " " <<  box_vector[0].y << " -- "<< box_vector[1].x << " " <<  box_vector[1].y << " " <<std::endl;
-               
-                // std::cout << "In removing boxes: pixel x: " << box_vector[0].x << " pixel y: " << box_vector[0].y <<
-                // " north: " << std::get<0>(coords[0]) << " east: " << std::get<1>(coords[0]) <<
+                // Send data trough UDP: box_vector.size()
+                // char data[43 * box_vector.size()];
+                char *data = prepareMessageUDP2(box_vector, n_frame, cam->id, scale_x, scale_y);
                 // std::cout << "Press Enter to continue…" << std::endl;
                 // cin.get();
-                // std::cout << "Press Enter to continue…" << std::endl;
-                // cin.get();
-                // std::cout << "Press Enter to continue…" << std::endl;
-                // cin.get();
-                // " lat: " << std::get<0>(coordsGeo[0]) << " lon: " << std::get<1>(coordsGeo[0]) << std::endl;
+
                 std::cout << "C: n_frame = " << n_frame <<std::endl;
-                sendUDPMessage(sockfd, n_frame, data, &size);
+                sendUDPMessage(sockfd, data);
             }
 
             //feed the viewer
@@ -574,9 +607,6 @@ void *elaborateSingleCamera(void *ptr)
 
             prof.tick("Prepare message"); 
             //send the data if the message is not empty
-            if (!use_udp_socket){
-                prepareMessage(t, message, cam->geoConv, cam->id, cam->dataset, timestamp_acquisition);
-            }
 
             if (!message.objects.empty()){
                 communicator.send_message(&message, cam->portCommunicator);

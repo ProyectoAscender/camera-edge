@@ -14,7 +14,7 @@ std::string get_timestamp()
 void *readVideoCapture( void *ptr )
 {
     edge::video_cap_data* data = (edge::video_cap_data*) ptr;
-    
+
     std::cout<<"Thread: "<<data->input<< " started" <<std::endl;
 
     auto stream_mode = data->gstreamer ? cv::CAP_GSTREAMER : cv::CAP_FFMPEG;
@@ -23,7 +23,6 @@ void *readVideoCapture( void *ptr )
     cv::VideoCapture cap(data->input, stream_mode);
     std::cout<<"openCV RIGHT!: "<<stream_mode <<std::endl;
     if(!cap.isOpened()){
-
         std::cout << " -> CASO 1 " << std::endl;
         gRun = false; 
     }
@@ -39,13 +38,13 @@ void *readVideoCapture( void *ptr )
         int w = cap.get(cv::CAP_PROP_FRAME_WIDTH);
         int h = cap.get(cv::CAP_PROP_FRAME_HEIGHT);
         result_video.open("../data/output/video_cam_" +
-                            std::to_string(data->camId)+ "_" + 
+                            data->camId+ "_" + 
                             std::to_string(w)+ "_" + 
                             std::to_string(h)+ "_" + 
                             std::to_string(data->framesToProcess) + "_frames_" + 
                             get_timestamp() + ".mp4", 
                            cv::VideoWriter::fourcc('M','P','4','V'), 30, cv::Size(w, h));
-        video_timestamp.open ("timestamp_cam_"+std::to_string(data->camId)+".txt");
+        video_timestamp.open ("timestamp_cam_"+data->camId+".txt");
     }
 
     uint64_t timestamp_acquisition = 0;
@@ -54,10 +53,11 @@ void *readVideoCapture( void *ptr )
     std::cout << " -> CASO VC - pre while " << gRun << std::endl;
     while(gRun) {
         if(!data->frameConsumed) {
-            //std::cout<<" -> Sleeping. Frame consumed = " << data->frameConsumed << std::endl;
+            // std::cout<<" -> Sleeping. Frame consumed = " << data->frameConsumed << std::endl;
             usleep(500);
             continue;
         }
+        std::cout<<" -> Frame acquisition -- " << std::endl;
         prof.tick("Frame acquisition");
         cap >> frame; 
         timestamp_acquisition = getTimeMs();
@@ -70,7 +70,7 @@ void *readVideoCapture( void *ptr )
             cap.open(data->input);
             printf("cap reinitialize\n");
             continue;
-        } 
+        }
         //resizing the image to 960x540 (the DNN takes in input 544x320)
         prof.tick("Frame resize");
         cv::resize (frame, resized_frame, cv::Size(new_width, new_height)); 

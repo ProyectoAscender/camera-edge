@@ -1,6 +1,6 @@
 [submodule "tkDNN"]
 	path = tkDNN
-	url = https://github.com/ceccocats/tkDNN
+	url = https://gitlab.bsc.es/ppc/benchmarks/smart-city/tkdnn.git
 [submodule "tracker"]
 	path = tracker
 	url = https://gitlab.bsc.es/ppc-bsc/software/tracker.git

@@ -33,7 +33,7 @@ std::string encryptString(std::string to_encrypt, const std::string &password)
     return executeCommandAndGetOutput(command.c_str());
 }
 
-void readParamsFromYaml(const std::string &params_path, const std::vector<int> &cameras_ids, std::vector<edge::camera_params> &cameras_par, std::string &net, char &type, int &n_classes, std::string &tif_map_path)
+void readParamsFromYaml(const std::string &params_path, const std::vector<std::string> &cameras_ids, std::vector<edge::camera_params> &cameras_par, std::string &net, char &type, int &n_classes, std::string &tif_map_path)
 {
     std::string password = "";
     YAML::Node config = YAML::LoadFile(params_path);
@@ -69,8 +69,8 @@ void readParamsFromYaml(const std::string &params_path, const std::vector<int> &
     int n_cameras = 0;
     for (int i = 0; i < cameras_yaml.size(); i++)
     {
-        int camera_id = cameras_yaml[i]["id"].as<int>();
-
+        std::string camera_id = cameras_yaml[i]["id"].as<std::string>();
+        
         // save infos only of the cameras whose ids where passed as args
         use_info = false;
         for (auto id : cameras_ids)
@@ -225,9 +225,9 @@ bool readParameters(int argc, char **argv, std::vector<edge::camera_params> &cam
     }
 
     // look for extra arguments (the ids of the cameras)
-    std::vector<int> cameras_ids;
+    std::vector<std::string> cameras_ids;
     for (; optind < argc; optind++)
-        cameras_ids.push_back(atoi(argv[optind]));
+        cameras_ids.push_back(argv[optind]);
 
     std::cout << cameras_ids.size() << " camera id(s) given: ";
     for (size_t i = 0; i < cameras_ids.size(); ++i)
@@ -238,7 +238,7 @@ bool readParameters(int argc, char **argv, std::vector<edge::camera_params> &cam
     if (params_path == "")
     {
         cameras_par.resize(1);
-        cameras_par[0].id = 20936;
+        cameras_par[0].id = "20936";
         cameras_par[0].framesToProcess = -1;
         cameras_par[0].portCommunicator = 8888;
         cameras_par[0].input = "../data/20936.mp4";
@@ -391,7 +391,7 @@ void readTiff(const std::string &path, double *adfGeoTransform)
 
 void readCaches(edge::camera &cam)
 {
-    std::string error_mat_data_path = "../data/" + std::to_string(cam.id) + "/caches";
+    std::string error_mat_data_path = "../data/" + cam.id + "/caches";
     if (cam.hasCalib)
         cam.precision = cv::Mat(cv::Size(cam.calibWidth, cam.calibHeight), CV_32F, 0.0);
     else

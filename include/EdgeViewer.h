@@ -15,7 +15,7 @@ struct camera_data{
     std::vector<tk::dnn::box> detected;        
     std::vector<tracker_line> lines;
     cv::Mat frame;
-    int id = 0;
+    std::string id = 0;
     int showId = -1;
     bool *showCamera;
     bool newFrame = false;
@@ -109,7 +109,7 @@ class EdgeViewer : public tk::gui::Viewer {
             ImGui::SetWindowSize(ImVec2(70*avCameras,40));
             ImGui::SetWindowPos(ImVec2(0,0));            
             for(auto& cd:cameraData){
-                ImGui::Checkbox(std::to_string(cd.id).c_str(), cd.showCamera);
+                ImGui::Checkbox(cd.id.c_str(), cd.showCamera);
                 ImGui::SameLine();
             }
             ImGui::End();
@@ -182,8 +182,8 @@ class EdgeViewer : public tk::gui::Viewer {
             }
             
         }
-        void setFrameData(const cv::Mat &new_frame, const std::vector<tk::dnn::box> &new_detected, const std::vector<tracker_line>& new_lines, int id){ 
-            int cur_index = idIndexBind[id];
+        void setFrameData(const cv::Mat &new_frame, const std::vector<tk::dnn::box> &new_detected, const std::vector<tracker_line>& new_lines, std::string id){ 
+            int cur_index = idIndexBind[std::stoi(id)];
             
             cameraData[cur_index].mtxNewFrame->lock();
             cameraData[cur_index].newFrame  = true;
@@ -197,15 +197,15 @@ class EdgeViewer : public tk::gui::Viewer {
             classesNames = classes_names;
         }
 
-        tk::common::Vector3<float> convertPosition(int x, int y, float z, int id){
-            float new_x = ((float)x/(float)cameraData[idIndexBind[id]].frame_width - 0.5)*cameraData[idIndexBind[id]].yScale;
-            float new_y = -((float)y/(float)cameraData[idIndexBind[id]].frame_height -0.5)*cameraData[idIndexBind[id]].xScale;
+        tk::common::Vector3<float> convertPosition(int x, int y, float z, std::string id){
+            float new_x = ((float)x/(float)cameraData[idIndexBind[std::stoi(id)]].frame_width - 0.5)*cameraData[idIndexBind[std::stoi(id)]].yScale;
+            float new_y = -((float)y/(float)cameraData[idIndexBind[std::stoi(id)]].frame_height -0.5)*cameraData[idIndexBind[std::stoi(id)]].xScale;
             return tk::common::Vector3<float>{new_x, new_y, z};
         }
 
-        tk::common::Vector3<float> convertSize(int w, int h, int id){
-            float new_w = (float)w/(float)cameraData[idIndexBind[id]].frame_width * cameraData[idIndexBind[id]].yScale;
-            float new_h = (float)h/(float)cameraData[idIndexBind[id]].frame_height * cameraData[idIndexBind[id]].xScale;
+        tk::common::Vector3<float> convertSize(int w, int h, std::string id){
+            float new_w = (float)w/(float)cameraData[idIndexBind[std::stoi(id)]].frame_width * cameraData[idIndexBind[std::stoi(id)]].yScale;
+            float new_h = (float)h/(float)cameraData[idIndexBind[std::stoi(id)]].frame_height * cameraData[idIndexBind[std::stoi(id)]].xScale;
             return tk::common::Vector3<float>{new_w, new_h, 0};
         }
 
@@ -219,13 +219,13 @@ class EdgeViewer : public tk::gui::Viewer {
             }
         }
 
-        void bindCamera(const int id, bool *show_camera)
+        void bindCamera(std::string id, bool *show_camera)
         {         
             mtxIndex.lock();
-            idIndexBind[id] = cameraIndex++;
+            idIndexBind[std::stoi(id)] = cameraIndex++;
             mtxIndex.unlock();
-            cameraData[idIndexBind[id]].id = id;
-            cameraData[idIndexBind[id]].showCamera = show_camera;
+            cameraData[idIndexBind[std::stoi(id)]].id = id;
+            cameraData[idIndexBind[std::stoi(id)]].showCamera = show_camera;
         }
 
         void resetShowIds(){

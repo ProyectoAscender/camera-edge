@@ -24,7 +24,7 @@ struct camera_params
     std::string                     maskfilePath        = "";
     std::string                     cameraCalibPath     = "";
     std::string                     maskFileOrientPath  = "";
-    int                             id                  = 0;
+    std::string                     id                  = "0";
     int                             portCommunicator    = 8888;
     int                             framesToProcess     = -1;
     int                             streamWidth         = 0;
@@ -47,7 +47,7 @@ struct camera{
     tk::dnn::DetectionNN*           detNN               = nullptr;  
     tk::common::GeodeticConverter   geoConv; 
     double*                         adfGeoTransform     = nullptr;
-    int                             id                  = 0;
+    std::string                     id                  = "0";
     int                             framesToProcess     = -1;
     int                             portCommunicator    = 8888;
     int                             calibWidth;
