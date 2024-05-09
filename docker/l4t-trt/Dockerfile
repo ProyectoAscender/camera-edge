@@ -92,8 +92,8 @@ RUN git clone https://github.com/pybind/pybind11.git && \
 
 
 ENV AAA=BBB
-RUN echo "dummy22211112"
-RUN cd /root/repos && git clone https://gitlab.bsc.es/ppc-bsc/software/camera-edge.git 
+RUN echo "qqqqqaaaaa"
+RUN cd /root/repos && git clone https://pat:ZBDrnj-dzZEUdBAFz6KF@gitlab.bsc.es/ppc/benchmarks/smart-city/camera-edge.git
 WORKDIR /root/repos/camera-edge
 RUN wget https://github.com/glfw/glfw/releases/download/3.3/glfw-3.3.zip && unzip glfw-3.3.zip && mkdir -p glfw-3.3/build && cd glfw-3.3/build && cmake .. && make -j4 && make install
 RUN git submodule add https://gitlab.bsc.es/ppc-bsc/software/masa_protocol.git ./masa_protocol
@@ -106,15 +106,15 @@ RUN git submodule update --init --recursive
 RUN mkdir build && cd build && \
     cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -Wno-dev .. && \
     make
-# Creating .rt file of DNN used
-RUN apt install -y curl
-RUN cd build/tkDNN && \
-    mkdir yolo4_berkeley && \
-    curl -tlsv1 -C - https://cloud.hipert.unimore.it/s/nkWFa5fgb4NTdnB/download --output yolo4_berkeley/weights.zip --user user:pass -O --retry 999 --retry-max-time 0 && \
-    unzip yolo4_berkeley/weights.zip -d yolo4_berkeley && \ 
-    rm yolo4_berkeley/weights.zip && \
-    ./test_yolo4_berkeley && \
-    mv yolo4_berkeley ../
+# # Creating .rt file of DNN used
+# RUN apt install -y curl
+# RUN cd build/tkDNN && \
+#     mkdir yolo4_berkeley && \
+#     curl -tlsv1 -C - https://cloud.hipert.unimore.it/s/nkWFa5fgb4NTdnB/download --output yolo4_berkeley/weights.zip --user user:pass -O --retry 999 --retry-max-time 0 && \
+#     unzip yolo4_berkeley/weights.zip -d yolo4_berkeley && \ 
+#     rm yolo4_berkeley/weights.zip && \
+#     ./test_yolo4_berkeley && \
+#     mv yolo4_berkeley ../
 
 RUN apt-get install -y gdb
 
