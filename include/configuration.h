@@ -11,10 +11,10 @@
 #include <gdal/gdal.h>
 #include <gdal_priv.h>
 
-#include "tkDNN/utils.h"
-#include "tkDNN/CenternetDetection.h"
-#include "tkDNN/MobilenetDetection.h"
-#include "tkDNN/Yolo3Detection.h"
+//#include "tkDNN/utils.h"
+//#include "tkDNN/CenternetDetection.h"
+//#include "tkDNN/MobilenetDetection.h"
+//#include "tkDNN/Yolo3Detection.h"
 
 #include "data.h"
 

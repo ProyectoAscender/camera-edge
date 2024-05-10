@@ -92,8 +92,8 @@ RUN git clone https://github.com/pybind/pybind11.git && \
 
 
 ENV AAA=BBB
-RUN echo "qqqqqaaaaa"
-RUN cd /root/repos && git clone https://pat:ZBDrnj-dzZEUdBAFz6KF@gitlab.bsc.es/ppc/benchmarks/smart-city/camera-edge.git
+RUN echo "bbbb"
+RUN cd /root/repos && git clone https://pat:ZBDrnj-dzZEUdBAFz6KF@gitlab.bsc.es/ppc/benchmarks/smart-city/camera-edge.git -b master
 WORKDIR /root/repos/camera-edge
 RUN wget https://github.com/glfw/glfw/releases/download/3.3/glfw-3.3.zip && unzip glfw-3.3.zip && mkdir -p glfw-3.3/build && cd glfw-3.3/build && cmake .. && make -j4 && make install
 RUN git submodule add https://gitlab.bsc.es/ppc-bsc/software/masa_protocol.git ./masa_protocol

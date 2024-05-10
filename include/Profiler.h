@@ -8,7 +8,7 @@
 #include <iomanip>
 #include <chrono>
 
-#include "tkDNN/utils.h"
+//#include "tkDNN/utils.h"
 
 #define MAX_MIN 9999999
 
