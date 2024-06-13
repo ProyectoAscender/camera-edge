@@ -11,6 +11,7 @@
 #include <gdal/gdal.h>
 #include <gdal_priv.h>
 
+
 //#include "tkDNN/utils.h"
 //#include "tkDNN/CenternetDetection.h"
 //#include "tkDNN/MobilenetDetection.h"
@@ -29,7 +30,6 @@ bool readParameters(int argc, char **argv,std:: vector<edge::camera_params>& cam
 
 void readProjectionMatrix(const std::string& path, cv::Mat& prj_mat);
 void readCalibrationMatrix(const std::string& path, cv::Mat& calib_mat, cv::Mat& dist_coeff, int& image_width, int& image_height);
-void readTiff(const std::string& path, double *adfGeoTransform);
 
 std::vector<edge::camera> configure(int argc, char **argv);
 

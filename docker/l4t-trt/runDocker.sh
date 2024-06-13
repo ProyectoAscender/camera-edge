@@ -1,0 +1,2 @@
+IMAGE=registry.gitlab.bsc.es/ppc/benchmarks/smart-city/camera-edge:trt-r8.5.2.2-devel
+docker run --runtime nvidia --name edge01 -p 8080:8080 -p 8885:8885 -p 8885:8885/udp -v ~/camera-edge/:/root/repos/camera-edge/ -v /root/repos/camera-edge/build -v /root/repos/camera-edge/masa_protocol -v /root/repos/camera-edge/tracker -v /root/repos/camera-edge/trt-detect -v /mnt/b2drop/smartCity:/root/ -it $IMAGE /bin/bash

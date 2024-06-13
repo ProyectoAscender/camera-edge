@@ -1,11 +1,10 @@
-#include <iostream>
 #include "configuration.h"
 #include <yaml-cpp/yaml.h>
-#include "tkCommon/exceptions.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
-#include <signal.h>
+#include <csignal>
+#include <iostream>
 #include "camera_elaboration.h"
 #include "data.h"
 
@@ -16,7 +15,7 @@ void sig_handler(int signo) {
 
 int main(int argc, char **argv)
 {
-    tk::exceptions::handleSegfault();
+    // tk::exceptions::handleSegfault();
     std::signal(SIGINT, sig_handler);    
     std::signal(SIGTERM, sig_handler);
 
@@ -28,12 +27,12 @@ int main(int argc, char **argv)
 
     if(show){
         //TODO allow to switch on and off viewer with signals
-        viewer = new edge::EdgeViewer(cameras.size());
-        viewer->setWindowName("Cameras");
-        viewer->setBackground(tk::gui::color::DARK_GRAY);
-        // viewer->setClassesNames(cameras[0].detNN->classesNames);
-        // viewer->setColors(cameras[0].detNN->classes);
-        viewer->initOnThread();    
+        // viewer = new edge::EdgeViewer(cameras.size());
+        // viewer->setWindowName("Cameras");
+        // viewer->setBackground(tk::gui::color::DARK_GRAY);
+        // // viewer->setClassesNames(cameras[0].detNN->classesNames);
+        // // viewer->setColors(cameras[0].detNN->classes);
+        // viewer->initOnThread();    
     }
 
     pthread_t threads[MAX_CAMERAS];
@@ -41,7 +40,6 @@ int main(int argc, char **argv)
     for(size_t i=0; i<cameras.size(); ++i)
         iret[i] = pthread_create( &threads[i], NULL, elaborateSingleCamera, (void*) &cameras[i]);
 
-    if(show) viewer->joinThread();
 
     for(size_t i=0; i<cameras.size(); ++i)
         pthread_join( threads[i], NULL);

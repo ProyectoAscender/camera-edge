@@ -1,4 +1,6 @@
 #include "configuration.h"
+#include "utils.h"
+
 
 std::string executeCommandAndGetOutput(const char *command)
 {
@@ -67,8 +69,11 @@ void readParamsFromYaml(const std::string &params_path, const std::vector<std::s
     YAML::Node cameras_yaml = config["cameras"];
     bool use_info;
     int n_cameras = 0;
+    std::cout << "AAAAAAAAA" << std::endl;
     for (int i = 0; i < cameras_yaml.size(); i++)
     {
+            std::cout << "BBBB" << std::endl;
+
         std::string camera_id = cameras_yaml[i]["id"].as<std::string>();
         
         // save infos only of the cameras whose ids where passed as args
@@ -83,6 +88,7 @@ void readParamsFromYaml(const std::string &params_path, const std::vector<std::s
         cameras_par[n_cameras - 1].id = camera_id;
         cameras_par[n_cameras - 1].framesToProcess = cameras_yaml[i]["framesToProcess"].as<int>();
         cameras_par[n_cameras - 1].portCommunicator = cameras_yaml[i]["portCommunicator"].as<int>();
+                    std::cout << "BBBB2" << std::endl;
 
         if (cameras_yaml[i]["gstreamer"].as<bool>())
         {
@@ -92,6 +98,7 @@ void readParamsFromYaml(const std::string &params_path, const std::vector<std::s
         {
             cameras_par[n_cameras - 1].gstreamer = false;
         }
+                        std::cout << "BBBB3" << std::endl;
 
         if (cameras_par[n_cameras - 1].gstreamer)
         {
@@ -131,6 +138,7 @@ void readParamsFromYaml(const std::string &params_path, const std::vector<std::s
                     cameras_par[n_cameras - 1].input = cameras_par[n_cameras - 1].input + "?resolution=" + cameras_par[n_cameras - 1].resolution;
             }
         }
+                    std::cout << "BBBB4" << std::endl;
 
         cameras_par[n_cameras - 1].pmatrixPath = cameras_yaml[i]["pmatrix"].as<std::string>();
         cameras_par[n_cameras - 1].streamWidth = stream_width;
@@ -144,13 +152,18 @@ void readParamsFromYaml(const std::string &params_path, const std::vector<std::s
             cameras_par[n_cameras - 1].maskFileOrientPath = cameras_yaml[i]["maskFileOrient"].as<std::string>();
         if (cameras_yaml[i]["maskfile"])
             cameras_par[n_cameras - 1].maskfilePath = cameras_yaml[i]["maskfile"].as<std::string>();
+                                std::cout << "BBBB5" << std::endl;
 
         // simple check: if the input contains rtsp string and stream is set to false, then raise ad exception
         if (!stream && cameras_par[n_cameras - 1].input.find("rtsp") != std::string::npos)
         {
             FatalError("Error: it's a rtsp stream, so you have to change the field in the yaml file\n");
         }
+                                        std::cout << "BBBB6" << std::endl;
+
     }
+                                    std::cout << "BBBB¡7" << std::endl;
+
 }
 
 bool readParameters(int argc, char **argv, std::vector<edge::camera_params> &cameras_par, std::string &net, char &type, int &n_classes, std::string &tif_map_path)
@@ -254,6 +267,8 @@ bool readParameters(int argc, char **argv, std::vector<edge::camera_params> &cam
     }
     else
         readParamsFromYaml(params_path, cameras_ids, cameras_par, net, type, n_classes, tif_map_path);
+    
+    std::cout << "BBBBQ1" << std::endl;
 
     // if specified from command line, override parameters read from file
     if (read_net != "")
@@ -265,13 +280,14 @@ bool readParameters(int argc, char **argv, std::vector<edge::camera_params> &cam
     if (read_n_classes != 0)
         n_classes = read_n_classes;
 
+    std::cout << "BBBBQ1" << std::endl;
+
     std::cout << "Input parameters file in use:\t" << params_path << std::endl;
     std::cout << "Tif map in use:\t\t\t" << tif_map_path << std::endl;
     std::cout << "Network rt to use:\t\t" << net << std::endl;
     std::cout << "Type of network in use:\t\t" << type << std::endl;
     std::cout << "Number of classes specified:\t" << n_classes << std::endl
               << std::endl;
-
     return true;
 }
 
@@ -367,27 +383,6 @@ void readCalibrationMatrix(const std::string &path, cv::Mat &calib_mat, cv::Mat 
     dist_coeff = coeff;
 }
 
-void readTiff(const std::string &path, double *adfGeoTransform)
-{
-    if (!fileExist(path.c_str()))
-    {
-        std::cout << path << std::endl;
-        if (path == "../data/masa_map.tif")
-            system("wget https://cloud.hipert.unimore.it/s/rWrdd2ygKF48eGp/download -O ../data/masa_map.tif");
-        if (!fileExist(path.c_str()))
-            FatalError("Tif map given does not exit. Needed for tracker.");
-    }
-
-    GDALDataset *poDataset;
-    GDALAllRegister();
-    poDataset = (GDALDataset *)GDALOpen(path.c_str(), GA_ReadOnly);
-    if (poDataset != NULL)
-    {
-        std::cout << " -- -- BBBBBBB " << std::endl;
-        poDataset->GetGeoTransform(adfGeoTransform);
-    }
-    std::cout << " -- -- AAAAAAAAAAAAAAAAAA " << std::endl;
-}
 
 void readCaches(edge::camera &cam)
 {
@@ -426,7 +421,7 @@ std::vector<edge::camera> configure(int argc, char **argv)
 
     // read args from command line
     readParameters(argc, argv, cameras_par, net, type, n_classes, tif_map_path);
-
+    std::cout << "Parameters read" << std::endl;
     // set dataset
     edge::Dataset_t dataset;
     switch (n_classes)
@@ -451,27 +446,42 @@ std::vector<edge::camera> configure(int argc, char **argv)
     std::vector<edge::camera> cameras(cameras_par.size());
     for (size_t i = 0; i < cameras.size(); ++i)
     {
+            std::cout << "read 1" << cameras_par[i].cameraCalibPath << std::endl;
+
         if (cameras_par[i].cameraCalibPath != "")
         {
             cameras[i].hasCalib = true;
+                        std::cout << "read 11" << cameras_par[i].cameraCalibPath << std::endl;
+
             readCalibrationMatrix(cameras_par[i].cameraCalibPath,
                                   cameras[i].calibMat,
                                   cameras[i].distCoeff,
                                   cameras[i].calibWidth,
                                   cameras[i].calibHeight);
+            std::cout << "read 12" << cameras_par[i].cameraCalibPath << std::endl;
+
         }
+                    std::cout << "read 2" << std::endl;
         readProjectionMatrix(cameras_par[i].pmatrixPath, cameras[i].prjMat);
+                    std::cout << "read 3" << std::endl;
+
         cameras[i].id = cameras_par[i].id;
         cameras[i].input = cameras_par[i].input;
         cameras[i].framesToProcess = cameras_par[i].framesToProcess;
         cameras[i].portCommunicator = cameras_par[i].portCommunicator;
+                    std::cout << "read 4" << std::endl;
+
         cameras[i].streamWidth = cameras_par[i].streamWidth;
         cameras[i].streamHeight = cameras_par[i].streamHeight;
         cameras[i].filterType = cameras_par[i].filterType;
         cameras[i].show = cameras_par[i].show;
+                    std::cout << "read 5" << std::endl;
+
         cameras[i].gstreamer = cameras_par[i].gstreamer;
         cameras[i].invPrjMat = cameras[i].prjMat.inv();
         cameras[i].dataset = dataset;
+                    std::cout << "read 6" << std::endl;
+
     }
 
     // initialize neural netwokr for each camera
@@ -485,7 +495,6 @@ std::vector<edge::camera> configure(int argc, char **argv)
 
     // read tif image to get georeference parameters
     double *adfGeoTransform = (double *)malloc(6 * sizeof(double));
-    readTiff(tif_map_path, adfGeoTransform);
     if (verbose)
     {
         for (int i = 0; i < 6; i++)
@@ -493,22 +502,20 @@ std::vector<edge::camera> configure(int argc, char **argv)
         std::cout << std::endl;
     }
 
-    for (auto &c : cameras)
-    {
-        readCaches(c);
+    // for (auto &c : cameras)
+    // {
+    //     readCaches(c);
 
-        c.adfGeoTransform = (double *)malloc(6 * sizeof(double));
-        memcpy(c.adfGeoTransform, adfGeoTransform, 6 * sizeof(double));
+    //     c.adfGeoTransform = (double *)malloc(6 * sizeof(double));
+    //     memcpy(c.adfGeoTransform, adfGeoTransform, 6 * sizeof(double));
 
-        c.adfGeoTransform[3] = 41.365663;
-        c.adfGeoTransform[0] = 2.134057;
-        // initialize the geodetic converter with a point in the MASA
-        c.geoConv.initialiseReference(c.adfGeoTransform[3], c.adfGeoTransform[0], 0);
-        std::cout << " -- -- CAM INIT REFERENCE " << c.adfGeoTransform[3] << " " << c.adfGeoTransform[0] << " " << c.adfGeoTransform[1] << " " << c.adfGeoTransform[2] << std::endl;
-    }
-    free(adfGeoTransform);
-
-    std::cout << COL_ORANGEB << "class-edge version " << VERSION_MAJOR << "." << VERSION_MINOR << COL_END << std::endl;
+    //     c.adfGeoTransform[3] = 41.365663;
+    //     c.adfGeoTransform[0] = 2.134057;
+    //     // initialize the geodetic converter with a point in the MASA
+    //     c.geoConv.initialiseReference(c.adfGeoTransform[3], c.adfGeoTransform[0], 0);
+    //     std::cout << " -- -- CAM INIT REFERENCE " << c.adfGeoTransform[3] << " " << c.adfGeoTransform[0] << " " << c.adfGeoTransform[1] << " " << c.adfGeoTransform[2] << std::endl;
+    // }
+    // free(adfGeoTransform);
 
     return cameras;
 }

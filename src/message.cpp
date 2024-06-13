@@ -1,4 +1,6 @@
 #include "message.h"
+#include "utils.h"
+
 
 uint8_t orientationToUint8(const float yaw){
     uint8_t orientation = uint8_t((int((yaw * 57.29 + 360)) % 360) * 17 / 24);

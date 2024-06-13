@@ -7,6 +7,8 @@
 #include <map>
 #include <iomanip>
 #include <chrono>
+#include "utils.h"
+
 
 //#include "tkDNN/utils.h"
 

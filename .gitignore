@@ -27,5 +27,7 @@ data/637/*
 *.tif
 *.bin
 build*
-scripts/
+*.engine
+trt-detect/*
+trt-detect
 

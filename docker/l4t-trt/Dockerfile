@@ -62,7 +62,7 @@ RUN apt-get update -y && apt install -y build-essential \
 
 ARG OPENCV_VERSION="4.7.0"
 COPY docker/l4t-trt/build_opencv.sh build_opencv.sh 
-RUN bash build_opencv.sh
+RUN bash build_opencv.sh  ${OPENCV_VERSION} 
 
 # Class edge compiling requirements
 RUN  wget https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz && \
@@ -92,11 +92,15 @@ RUN git clone https://github.com/pybind/pybind11.git && \
 
 
 ENV AAA=BBB
-RUN echo "bbbb"
-RUN cd /root/repos && git clone https://pat:ZBDrnj-dzZEUdBAFz6KF@gitlab.bsc.es/ppc/benchmarks/smart-city/camera-edge.git -b master
+RUN echo "BBBB"
+# RUN cd /root/repos && git clone https://pat:ZBDrnj-dzZEUdBAFz6KF@gitlab.bsc.es/ppc/benchmarks/smart-city/camera-edge.git -b master
+RUN mkdir -p /root/repos/camera-edge
+COPY . /root/repos/camera-edge
 WORKDIR /root/repos/camera-edge
 RUN wget https://github.com/glfw/glfw/releases/download/3.3/glfw-3.3.zip && unzip glfw-3.3.zip && mkdir -p glfw-3.3/build && cd glfw-3.3/build && cmake .. && make -j4 && make install
 RUN git submodule add https://gitlab.bsc.es/ppc-bsc/software/masa_protocol.git ./masa_protocol
+RUN git submodule update --init --recursive 
+RUN git submodule add https://gitlab.bsc.es/ppc/benchmarks/ai/trt-detect.git ./trt-detect
 RUN git submodule update --init --recursive 
 
 # RUN cd class-edge && \
@@ -116,7 +120,7 @@ RUN mkdir build && cd build && \
 #     ./test_yolo4_berkeley && \
 #     mv yolo4_berkeley ../
 
-RUN apt-get install -y gdb
+RUN apt-get update -y && apt install -y gdb
 
 # # COMPSS added in this dockerfile for PAI Project. 
 # RUN python3 -m pip install dataclay pymap3d zmq requests pygeohash geolib 

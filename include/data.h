@@ -6,9 +6,9 @@
 #include <iomanip>
 #include <fstream>
 
-#include "tkCommon/common.h"
 // #include "tkDNN/DetectionNN.h"
-#include "EdgeViewer.h"
+// #include "EdgeViewer.h"
+#include <opencv2/opencv.hpp>
 
 #define MAX_CAMERAS 10
 #define VERSION_MAJOR 1
@@ -44,7 +44,7 @@ struct camera{
     std::string                     input               = "";
     std::string                     ipCommunicator      = "172.17.0.3";
     // tk::dnn::DetectionNN*           detNN               = nullptr;  
-    tk::common::GeodeticConverter   geoConv; 
+    // tk::common::GeodeticConverter   geoConv; 
     double*                         adfGeoTransform     = nullptr;
     std::string                     id                  = "0";
     int                             framesToProcess     = -1;
@@ -64,7 +64,7 @@ struct camera{
 std::ostream& operator<<(std::ostream& os, const edge::camera_params& c);
 std::ostream& operator<<(std::ostream& os, const edge::camera& c);
 
-extern edge::EdgeViewer *viewer;
+// extern edge::EdgeViewer *viewer;
 extern bool gRun;
 extern bool show;
 extern bool use_udp_socket;
