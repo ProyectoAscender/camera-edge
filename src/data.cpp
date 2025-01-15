@@ -12,7 +12,6 @@ std::ostream& operator<<(std::ostream& os, const edge::camera_params& c){
     os<< "maskfilePath \t\t" << c.maskfilePath <<std::endl;
     os<< "cameraCalibPath \t" << c.cameraCalibPath <<std::endl;
     os<< "maskFileOrientPath \t" << c.maskFileOrientPath <<std::endl;
-    os<< "stream size \t\t[ " << c.streamWidth<< "x" << c.streamHeight<< " ]"<<std::endl;
     os<< "show \t\t\t" << (int)c.show <<std::endl;
     os<<"----------------------------------------------------\n";
     return os;
@@ -30,7 +29,6 @@ std::ostream& operator<<(std::ostream& os, const edge::camera& c){
     os<< "dataset \t\t" << c.dataset<<std::endl;
     os<< "show \t\t\t" << (int)c.show <<std::endl;
     os<< "calib size \t\t[ " << c.calibWidth<< "x" << c.calibHeight<< " ]"<<std::endl;
-    os<< "stream size \t\t[ " << c.streamWidth<< "x" << c.streamHeight<< " ]"<<std::endl;
     os<< "distCoeff \t\t" << c.distCoeff <<std::endl;
     os<< "calibMat: \n" << c.calibMat <<std::endl;
     os<< "prjMat: \n" << c.prjMat <<std::endl;

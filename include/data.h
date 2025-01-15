@@ -23,11 +23,10 @@ struct camera_params
     std::string                     maskfilePath        = "";
     std::string                     cameraCalibPath     = "";
     std::string                     maskFileOrientPath  = "";
+    std::string                     dataPath            = "";
     std::string                     id                  = "0";
     int                             portCommunicator    = 8888;
     int                             framesToProcess     = -1;
-    int                             streamWidth         = 0;
-    int                             streamHeight        = 0;
     int                             filterType          = 0;
     bool                            show                = false;    
     bool                            gstreamer           = false;    
@@ -47,12 +46,11 @@ struct camera{
     // tk::common::GeodeticConverter   geoConv; 
     double*                         adfGeoTransform     = nullptr;
     std::string                     id                  = "0";
+    std::string                     dataPath            = "";
     int                             framesToProcess     = -1;
     int                             portCommunicator    = 8888;
     int                             calibWidth;
     int                             calibHeight;
-    int                             streamWidth;
-    int                             streamHeight;
     int                             filterType          = 0;
     Dataset_t                       dataset;
     bool                            show                = false;

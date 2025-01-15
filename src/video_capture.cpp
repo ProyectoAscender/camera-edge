@@ -14,22 +14,26 @@ std::string get_timestamp()
 void *readVideoCapture( void *ptr )
 {
     edge::video_cap_data* data = (edge::video_cap_data*) ptr;
+    auto stream_mode = data->gstreamer ? cv::CAP_GSTREAMER : cv::CAP_FFMPEG;
+
 
     std::cout<<"Thread: "<<data->input<< " started" <<std::endl;
-
-    auto stream_mode = data->gstreamer ? cv::CAP_GSTREAMER : cv::CAP_FFMPEG;
     std::cout<<" data->gstreamer: "<<  data->gstreamer <<std::endl;
     std::cout<<"stream_mode: "<<stream_mode <<std::endl;
-    cv::VideoCapture cap(data->input, stream_mode);
-    std::cout<<"openCV RIGHT!: "<<stream_mode <<std::endl;
+
+    cv::VideoCapture cap("udpsrc port=5000 multicast-group=" + std::string(data->input) +
+                         " auto-multicast=true caps=application/x-rtp,media=video,clock-rate=90000,encoding-name=H264 ! rtph264depay ! h264parse ! avdec_h264 ! videoconvert ! appsink",
+                         stream_mode);
+
+
     if(!cap.isOpened()){
         std::cout << " -> CASO 1 " << std::endl;
         gRun = false; 
     }
 
-    const int new_width     = data->width;
-    const int new_height    = data->height;
-    cv::Mat frame, resized_frame;
+    // const int new_width     = data->width;
+    // const int new_height    = data->height;
+    cv::Mat frame; //, resized_frame;
 
     cv::VideoWriter result_video;
     std::ofstream video_timestamp;
@@ -44,13 +48,14 @@ void *readVideoCapture( void *ptr )
                             std::to_string(data->framesToProcess) + "_frames_" + 
                             get_timestamp() + ".mp4", 
                            cv::VideoWriter::fourcc('M','P','4','V'), 30, cv::Size(w, h));
-        video_timestamp.open ("timestamp_cam_"+data->camId+".txt");
+        video_timestamp.open ("timestamp_cam_" + data->camId + ".txt");
     }
 
     uint64_t timestamp_acquisition = 0;
     unsigned int contador = 0;
     edge::Profiler prof("Video capture" + std::string(data->input));
     std::cout << " -> CASO VC - pre while " << gRun << std::endl;
+
     while(gRun) {
         if(!data->frameConsumed) {
             // std::cout<<" -> Sleeping. Frame consumed = " << data->frameConsumed << std::endl;
@@ -72,14 +77,14 @@ void *readVideoCapture( void *ptr )
             continue;
         }
         //resizing the image to 960x540 (the DNN takes in input 544x320)
-        prof.tick("Frame resize");
-        cv::resize (frame, resized_frame, cv::Size(new_width, new_height)); 
+        // prof.tick("Frame resize");
+        // cv::resize (frame, resized_frame, cv::Size(new_width, new_height)); 
+        // prof.tock("Frame resize");
          
-        prof.tock("Frame resize");
 
         prof.tick("Frame copy");
         data->mtxF.lock();
-        data->frame         = resized_frame.clone();
+        data->frame         = frame.clone();
         data->tStampMs      = timestamp_acquisition;
         data->frameConsumed = false;
         data->mtxF.unlock();

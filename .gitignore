@@ -28,6 +28,7 @@ data/637/*
 *.bin
 build*
 *.engine
+*.pt
 trt-detect/*
 trt-detect
 

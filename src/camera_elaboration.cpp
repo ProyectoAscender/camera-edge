@@ -18,7 +18,6 @@
 #include <sys/socket.h>
 
 
-
 using std::cin;
 
 // void CharToByte(char* char_arr, unsigned char* unsigned_char_arr, unsigned int count){
@@ -27,6 +26,21 @@ using std::cin;
 //         }
 // }
 
+void sendUDPMessage2(int sockfd, char* data, size_t data_size, sockaddr_in& clientaddr) {
+    // Validar datos de entrada
+    if (data == nullptr || data_size == 0) {
+        std::cerr << "[ERROR] Datos inválidos para enviar." << std::endl;
+        return;
+    }
+    std::cout << "SENT TO" << std::endl;
+    // Enviar el mensaje usando sendto
+    ssize_t bytes_sent = sendto(sockfd, data, data_size, 0, (struct sockaddr*)&clientaddr, sizeof(clientaddr));
+    if (bytes_sent < 0) {
+        perror("[ERROR] Error al enviar el mensaje UDP");
+    } else {
+        std::cout << "[INFO] Mensaje enviado con éxito (" << bytes_sent << " bytes)" << std::endl;
+    }
+}
 
 
 void sendUDPMessage(int sockfd, char* data ){
@@ -50,26 +64,60 @@ void sendUDPMessage(int sockfd, char* data ){
 
     std::cout << "****************-------------Preparing UDP Meesage const:"  <<  (const char *)data <<  std::endl;
     
-
     
     size_t data_size = strlen((const char *)data);
     // printBufferHex((const char *)data, data_size);
-    if (client_ip_str != "0.0.0.0"){
+   // if (client_ip_str != "0.0.0.0"){
         sendto(sockfd, (const char *)data, strlen(data),MSG_DONTWAIT, (const struct sockaddr *) &clientaddr,sizeof(clientaddr));
-    }
+   // }
     free(data); 
 }
 
+int setupUDPConnection(sockaddr_in& servaddr, std::string& socketPort) {
+
+    zmq::message_t unimportant_message;
+    zmq::context_t context(1);
+
+    std::cout << "Listdening to tcp://0.0.0.0:" << socketPort << " waiting for COMPSs ack to start" << std::endl;
+    zmq::socket_t *app_socket = new zmq::socket_t(context, ZMQ_REP);
+    app_socket->bind("tcp://0.0.0.0:" + socketPort);
+    app_socket->recv(&unimportant_message); // wait for python workflow to ack to start processing frames
+    app_socket->close();
+    delete app_socket;
+
+    std::cout << "Listening to udp in://0.0.0.0:" << socketPort << std::endl;
+
+    // Crear socket UDP
+    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd < 0) {
+        perror("[ERROR] Error al crear el socket");
+        return -1;
+    }
+
+    // Configurar la dirección del emisor (servidor)
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_port = htons(atoi(socketPort.c_str())); // Puerto para escuchar solicitudes
+    servaddr.sin_addr.s_addr = INADDR_ANY;
+
+    // Asociar el socket a la dirección y puerto
+    if (bind(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0) {
+        perror("[ERROR] Error al hacer bind");
+        close(sockfd);
+        return -1;
+    }
+
+    std::cout << "[INFO] Servidor UDP configurado y esperando solicitudes..." << std::endl;
+    return sockfd;
+}
 
 int openUDPsockets(std::string& socketPort){
-
 
     zmq::message_t unimportant_message;
     zmq::context_t context(1);
 
     struct sockaddr_in servaddr;
     int sockfd;
-    
+
     std::cout << "Listdening to tcp://0.0.0.0:" << socketPort << " waiting for COMPSs ack to start" << std::endl;
     zmq::socket_t *app_socket = new zmq::socket_t(context, ZMQ_REP);
     app_socket->bind("tcp://0.0.0.0:" + socketPort);
@@ -102,6 +150,8 @@ int openUDPsockets(std::string& socketPort){
     return sockfd;
 }
 
+
+
 void pixel2GPS(const int x, const int y, double &lat, double &lon, double* adfGeoTransform)
 {
     //conversion from pixels to GPS, via georeferenced map parameters
@@ -124,16 +174,16 @@ void GPS2pixel(double lat, double lon, int &x, int &y, double* adfGeoTransform)
 }
 
 
-char* prepareMessageUDP2( const std::vector<Box> &boxes, unsigned int n_frame, std::string cam_id, 
-                         float scale_x, float scale_y) {
+char* prepareMessageUDP2( const std::vector<Box> &boxes, unsigned int n_frame, std::string cam_id) {
     
     char* buffer= new char[60  * boxes.size()];
     // unsigned char* Bytes = new unsigned char[41  * boxes.size()];
     // We need to keep pointer initial position
     char *buffer_origin = buffer; 
     unsigned long long timestamp = getTimeMs();
-    
+    std::cout << "---->" <<  boxes.size()  << std::endl;
     for (int i = 0; i < boxes.size(); i++) {
+            std::cout << "----> UDP BOXES SIZE:" <<  boxes.size()  << std::endl;
 
             std::string result;
             for(int i = 0; i < cam_id.size(); i++) {
@@ -142,19 +192,31 @@ char* prepareMessageUDP2( const std::vector<Box> &boxes, unsigned int n_frame, s
                 result += buffer;
             }
             std::cout << "hexval1: " << result << std::endl;
-            
-            
-            
+
             // unsigned char* cam_id2 = cam_id.c_str();
             // std::cout << "hexval___: " <<  cam_id2  << std::endl;
 
         //flag, cam_id , n_frame, timestamp , box_x, box_y, box_w, box_h, score, class
         // size_t size_of_data = snprintf(buffer, 60, "%02x%04x%04x%016lx%04x%08lx%04x%04x%04x%04x",
-        size_t size_of_data = snprintf(buffer, 60, "%02x%02x%02x%02x%02x%04x%016llx%04x%04x%04x%04x%08lx%04x",
-                true, cam_id[0], cam_id[1], cam_id[2], cam_id[3], n_frame, timestamp, 
-                int(boxes[i].x), int(boxes[i].y), 
-                int(boxes[i].w), int(boxes[i].h),
-                 *(unsigned long*)&boxes[i].prob, boxes[i].cl);
+        std::cout<<"Box : " << i << " - "<< boxes[i].x << std::endl;
+        std::cout<<"Box : " << i << " - "<< boxes[i].y << std::endl;
+        std::cout<<"Box : " << i << " - "<< boxes[i].w << std::endl;
+        std::cout<<"Box : " << i << " - "<< boxes[i].h << std::endl;
+
+        // size_t size_of_data = snprintf(buffer, 60, "%02x%02x%02x%02x%02x%04x%016llx%04x%04x%04x%04x", //%08lx%04x",
+        //         true, cam_id[0], cam_id[1], cam_id[2], cam_id[3], n_frame, timestamp, 
+        //         int(boxes[i].x), int(boxes[i].y), 
+        //         int(boxes[i].w), int(boxes[i].h));
+        //         // *(unsigned long*)&boxes[i].prob, boxes[i].cl);
+
+        size_t size_of_data = snprintf(buffer, 60, "%02x%02x%02x%02x%02x%04x%016llx%04x%04x%04x%04x",
+                                        true, cam_id[0], cam_id[1], cam_id[2], cam_id[3], 
+                                        n_frame, timestamp,
+                                        int(boxes[i].x), int(boxes[i].y), 
+                                        int(boxes[i].w), int(boxes[i].h)
+                                        );
+        // *(unsigned long*)&boxes[i].prob, boxes[i].cl);
+
         std::cout << "Preparing UDP Meesage of length "  << size_of_data  <<  std::endl;
         std::cout << "Preparing UDP Meesage Content BUFFER- :"  << buffer <<  std::endl;
         // Set position at the end of the buffer to insert there next iteration
@@ -177,45 +239,56 @@ void *elaborateSingleCamera(void *ptr)
     edge::video_cap_data data;
     data.input          = (char*)cam->input.c_str();
     std::cout<<"Camera input: "<< data.input << std::endl;
-    data.width          = cam->streamWidth;
-    data.height         = cam->streamHeight;
     data.camId          = cam->id;
     data.frameConsumed  = true;
     data.framesToProcess = cam->framesToProcess;
     data.gstreamer      = cam->gstreamer;
+    data.dataPath = cam->dataPath;
     MasaMessage message;
     Communicator<MasaMessage> communicator;
         std::cout<<"Starting camera: "<< cam->id << std::endl;
 
-   
-    
+    sockaddr_in servaddr = {};
+    sockaddr_in clientaddr = {};
+    socklen_t clientaddr_len = sizeof(clientaddr);
+    int bufferSize = 70;
+
+    std::string camCommunicatorPort = std::to_string(cam->portCommunicator);
+
     if (pthread_create(&video_cap, NULL, readVideoCapture, (void *)&data)){
         fprintf(stderr, "Error creating thread\n");
         return (void *)1;
     }
-    
-    int sockfd=-1;
-    //instantiate the communicator and the socket
-    if (!use_udp_socket){
-        communicator.open_client_socket((char*)cam->ipCommunicator.c_str(), cam->portCommunicator);
-        int socket = communicator.get_socket();
-    } else {
-        // Client handshake and sending cam Info
-        std::string camCommunicatorPort = std::to_string(cam->portCommunicator);
-        std::cout << "- - - - -> WAITING FOR UDP HANDSHAKE  " << std::endl;
-        sockfd = openUDPsockets(camCommunicatorPort);
 
-        // const char *camData[100] = "Send this with UDP";
-        char* camData= new char[245];
-        std::cout << "- - - - -> SENDING DATA INFO :::: "<< data.camId << std::endl;
-        size_t size_of_data = snprintf(camData, 245, "%s|%s|%d|%d|%d|%d|%s",
-                                       "Send this with UDP: ",
-                                       data.camId.c_str(), data.gstreamer, cam->framesToProcess, 
-                                       data.height, data.width, data.input);
-        std::cout << "- - - - -> SENDING DATA INFO  " << std::endl;
-        sendUDPMessage(sockfd, camData);
-
+    int sockfd = setupUDPConnection(servaddr, camCommunicatorPort);
+    if (sockfd < 0) {
+        return (void *)1; // Terminar si no se pudo configurar
     }
+
+    char buffer_recv[1024];
+    ssize_t bytes_received = recvfrom(sockfd, buffer_recv, sizeof(buffer_recv), 0,
+                                        (struct sockaddr*)&clientaddr, &clientaddr_len);
+    std::cout << "recvfrom finalizado bytes)" << std::endl;
+    if (bytes_received < 0) {
+        perror("[ERROR] Error al recibir datos");
+    }
+
+    // Obtener IP del cliente
+    char client_ip[INET_ADDRSTRLEN] = {0};
+    inet_ntop(AF_INET, &clientaddr.sin_addr, client_ip, sizeof(client_ip));
+    std::cout << "[INFO] Solicitud recibida de " << client_ip << ":" << ntohs(clientaddr.sin_port) << std::endl;
+
+    // Datos a enviar en esta iteración (pueden variar)
+    char* camData = new char[bufferSize];
+    std::cout << "- - - - -> SENDING CAM INFO :::: "<< data.camId << std::endl;
+    size_t size_of_data = snprintf(camData, bufferSize, "%s|%s|%d|%d|%d|%d|%s",
+                                    "Sent  UDP: ",
+                                    data.camId.c_str(), data.gstreamer, cam->framesToProcess, 
+                                    data.height, data.width, data.dataPath.c_str());
+    std::cout << "- - - - -> SENDING CAM INFO  " << camData << std::endl;
+    std::cout << "- - - - -> CAM INFO SIZE  " << strlen(camData) << std::endl;
+    sendUDPMessage2(sockfd, camData, strlen(camData), clientaddr);
+    std::cout << "- - - - -> CAM INFO SENT  " << std::endl;
     
     
     cv::Mat frame;
@@ -232,18 +305,6 @@ void *elaborateSingleCamera(void *ptr)
     bool ce_verbose = false;
     bool first_iteration = true; 
     bool new_frame = false;
-
-    float scale_x   = cam->hasCalib ? (float)cam->calibWidth  / (float)cam->streamWidth : 1;
-    float scale_y   = cam->hasCalib ? (float)cam->calibHeight / (float)cam->streamHeight: 1;
-
-    std::cout << std::setprecision (15)  << "ESCALA X: "<<  (float)cam->calibWidth << " / " << (float)cam->streamWidth << " =  " << scale_x << std::endl;
-    std::cout << std::setprecision (15)  << "ESCALA Y: "<<  (float)cam->calibHeight << " / " << (float)cam->streamHeight << " =  " << scale_y <<std::endl;
-    std::cout << std::setprecision (15)  << "--- > " << cam->hasCalib << std::endl;
-
-
-
-    float err_scale_x = !cam->precision.empty() ? (float)cam->precision.cols  / (float)cam->streamWidth: 1;
-    float err_scale_y = !cam->precision.empty() ? (float)cam->precision.rows  / (float)cam->streamHeight: 1;
 
     int pixel_prec_x, pixel_prec_y;
     uint8_t *d_input, *d_output; 
@@ -262,7 +323,7 @@ void *elaborateSingleCamera(void *ptr)
     }
     
     // Declaring UDP variables
-    YoloV8Engine engine("../yolov6.engine", data.width, data.height, 0.7);
+    YoloV6Engine engine("../yolov6.engine", data.width, data.height, 0.5);
     
     unsigned int n_frame=0;
     std::cout << " -> CASO CE - pre while " << gRun << std::endl;
@@ -289,37 +350,12 @@ void *elaborateSingleCamera(void *ptr)
             std::cout << "A: n_frame = " << n_frame <<std::endl;
 
             //eventual undistort 
-            prof.tick("Undistort");
-            if(false){
-                if (first_iteration){
-                    cam->calibMat.at<double>(0,0)*=  double(cam->streamWidth) / double(cam->calibWidth);
-                    cam->calibMat.at<double>(0,2)*=  double(cam->streamWidth) / double(cam->calibWidth);
-                    cam->calibMat.at<double>(1,1)*=  double(cam->streamWidth) / double(cam->calibWidth);
-                    cam->calibMat.at<double>(1,2)*=  double(cam->streamWidth) / double(cam->calibWidth);
+            prof.tick("frame=distort");
+         
+            frame = distort;
+            
 
-                    cv::initUndistortRectifyMap(cam->calibMat, cam->distCoeff, cv::Mat(), cam->calibMat, cv::Size(cam->streamWidth, cam->streamHeight), CV_32F, map1, map2);
-
-                    checkCuda( cudaMalloc(&d_input, distort.cols*distort.rows*distort.channels()*sizeof(uint8_t)) );
-                    checkCuda( cudaMalloc(&d_output, distort.cols*distort.rows*distort.channels()*sizeof(uint8_t)) );
-                    checkCuda( cudaMalloc(&d_map1, map1.cols*map1.rows*map1.channels()*sizeof(float)) );
-                    checkCuda( cudaMalloc(&d_map2, map2.cols*map2.rows*map2.channels()*sizeof(float)) );
-                    frame = distort.clone();
-
-                    checkCuda( cudaMemcpy(d_map1, (float*)map1.data,  map1.cols*map1.rows*map1.channels()*sizeof(float), cudaMemcpyHostToDevice));
-                    checkCuda( cudaMemcpy(d_map2, (float*)map2.data,  map2.cols*map2.rows*map2.channels()*sizeof(float), cudaMemcpyHostToDevice));
-                    
-                    first_iteration = false;
-                }
-                checkCuda( cudaMemcpy(d_input, (uint8_t*)distort.data,  distort.cols*distort.rows*distort.channels()*sizeof(uint8_t), cudaMemcpyHostToDevice));
-                remap(d_input, cam->streamWidth, cam->streamHeight, 3, d_map1, d_map2, d_output, cam->streamWidth , cam->streamHeight, 3);
-                checkCuda( cudaMemcpy((uint8_t*)frame.data , d_output, distort.cols*distort.rows*distort.channels()*sizeof(uint8_t), cudaMemcpyDeviceToHost));
-                // cv::remap(distort, frame, map1, map2, cv::INTER_LINEAR);
-            }
-            else{
-                frame = distort;
-            }
-
-            prof.tock("Undistort");
+            prof.tock("frame=distort");
             batch_frame.push_back(frame);
             //inference
             prof.tick("Inference");
@@ -343,18 +379,16 @@ void *elaborateSingleCamera(void *ptr)
 
 
             if (use_udp_socket){
+                std::cout << "B: n_frame = " << n_frame <<std::endl;
 
-                // box_vector: 4 esquinas en pixeles
-                // collectBoxInfo(cam->detNN->batchDetected, box_vector, coords, coordsGeo, boxCoords, scale_x, scale_y, *cam);
                 unsigned int size;
-                std::cout << std::setprecision (15)  << "INIT POINT!: "<< cam->adfGeoTransform[3] << " " << cam->adfGeoTransform[0] << " " <<std::endl;
                 // Send data trough UDP: box_vector.size()
                 // char data[43 * box_vector.size()];
-                char *data = prepareMessageUDP2(boxes, n_frame, cam->id, scale_x, scale_y);
+                char *data = prepareMessageUDP2(boxes, n_frame, cam->id);
                 // std::cout << "Press Enter to continue…" << std::endl;
                 // cin.get();
                 std::cout << "CCCC: n_frame = " << n_frame <<std::endl;
-                sendUDPMessage(sockfd, data);
+                sendUDPMessage2(sockfd, data, 245, clientaddr);
             }
 
             prof.tick("Prepare message"); 

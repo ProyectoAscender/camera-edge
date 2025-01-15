@@ -25,6 +25,7 @@ struct video_cap_data
     int framesToProcess = -1;
     bool frameConsumed  = false;
     bool gstreamer      = false;
+    std::string dataPath         = "";
 };
 }
 

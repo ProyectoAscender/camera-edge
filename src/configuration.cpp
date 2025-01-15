@@ -46,13 +46,6 @@ void readParamsFromYaml(const std::string &params_path, const std::vector<std::s
     if (config["password"])
         password = config["password"].as<std::string>();
 
-    int stream_height, stream_width;
-    stream_width = config["width"].as<int>();
-    stream_height = config["height"].as<int>();
-
-    if (stream_height < 0 || stream_width < 0)
-        FatalError("The dimensions of the stream have to be greater than 0");
-
     int filter_type = 0; // EKF
     if (config["filter"])
         filter_type = config["filter"].as<int>();
@@ -75,6 +68,7 @@ void readParamsFromYaml(const std::string &params_path, const std::vector<std::s
             std::cout << "BBBB" << std::endl;
 
         std::string camera_id = cameras_yaml[i]["id"].as<std::string>();
+        std::string dataPath = cameras_yaml[i]["dataPath"].as<std::string>();
         
         // save infos only of the cameras whose ids where passed as args
         use_info = false;
@@ -86,6 +80,7 @@ void readParamsFromYaml(const std::string &params_path, const std::vector<std::s
 
         cameras_par.resize(++n_cameras);
         cameras_par[n_cameras - 1].id = camera_id;
+        cameras_par[n_cameras - 1].dataPath = dataPath;
         cameras_par[n_cameras - 1].framesToProcess = cameras_yaml[i]["framesToProcess"].as<int>();
         cameras_par[n_cameras - 1].portCommunicator = cameras_yaml[i]["portCommunicator"].as<int>();
                     std::cout << "BBBB2" << std::endl;
@@ -109,12 +104,12 @@ void readParamsFromYaml(const std::string &params_path, const std::vector<std::s
             //  framerate=25/1 ! timeoverlay halignment=left valignment=bottom text ="Stream time:"
             //  font-desc="Sans, 20"! clockoverlay ! absolute s !
             //  videoconvert ! appsink emit-signals=true sync=true max-buffers=3 drop=false
-            cameras_par[n_cameras - 1].input = "rtspsrc location=" + cameras_yaml[i]["input"].as<std::string>() +
-                                               " latency=2000 ! queue ! rtph264depay ! h264parse ! omxh264dec !" +
-                                               " nvvidconv ! video/x-raw,  width=(int)" + cameras_yaml[i]["gstreamer.width"].as<std::string>() +
-                                               ", height=(int)" + cameras_yaml[i]["gstreamer.height"].as<std::string>() +
-                                               " format=BGRx ! videoconvert ! video/x-raw, format=BGR ! appsink drop=true sync=false";
-            // cameras_par[n_cameras-1].input =  cameras_yaml[i]["input"].as<std::string>();
+            // cameras_par[n_cameras - 1].input = "rtpsrc location=" + cameras_yaml[i]["input"].as<std::string>() +
+            //                                    " latency=2000 ! queue ! rtph264depay ! h264parse ! omxh264dec !" +
+            //                                    " nvvidconv ! video/x-raw,  width=(int)" + cameras_yaml[i]["gstreamer.width"].as<std::string>() +
+            //                                    ", height=(int)" + cameras_yaml[i]["gstreamer.height"].as<std::string>() +
+            //                                    " format=BGRx ! videoconvert ! video/x-raw, format=BGR ! appsink drop=true sync=false";
+            cameras_par[n_cameras - 1].input = cameras_yaml[i]["input"].as<std::string>();
         }
         else
         {
@@ -141,8 +136,6 @@ void readParamsFromYaml(const std::string &params_path, const std::vector<std::s
                     std::cout << "BBBB4" << std::endl;
 
         cameras_par[n_cameras - 1].pmatrixPath = cameras_yaml[i]["pmatrix"].as<std::string>();
-        cameras_par[n_cameras - 1].streamWidth = stream_width;
-        cameras_par[n_cameras - 1].streamHeight = stream_height;
         cameras_par[n_cameras - 1].filterType = filter_type;
         cameras_par[n_cameras - 1].show = true;
 
@@ -254,13 +247,12 @@ bool readParameters(int argc, char **argv, std::vector<edge::camera_params> &cam
         cameras_par[0].id = "20936";
         cameras_par[0].framesToProcess = -1;
         cameras_par[0].portCommunicator = 8888;
-        cameras_par[0].input = "../data/20936.mp4";
+        cameras_par[0].input = "192.168.1.1";
+        cameras_par[0].dataPath = "";
         cameras_par[0].pmatrixPath = "../data/pmat_new/pmat_07-03-20936_20p.txt";
         cameras_par[0].maskfilePath = "";
         cameras_par[0].cameraCalibPath = "../data/calib_cameras/20936.params";
         cameras_par[0].maskFileOrientPath = "";
-        cameras_par[0].streamWidth = 960;
-        cameras_par[0].streamHeight = 540;
         cameras_par[0].filterType = 0;
         cameras_par[0].show = true;
         cameras_par[0].gstreamer = false;
@@ -384,33 +376,33 @@ void readCalibrationMatrix(const std::string &path, cv::Mat &calib_mat, cv::Mat 
 }
 
 
-void readCaches(edge::camera &cam)
-{
-    std::string error_mat_data_path = "../data/" + cam.id + "/caches";
-    if (cam.hasCalib)
-        cam.precision = cv::Mat(cv::Size(cam.calibWidth, cam.calibHeight), CV_32F, 0.0);
-    else
-        cam.precision = cv::Mat(cv::Size(cam.streamWidth, cam.streamHeight), CV_32F, 0.0);
+// void readCaches(edge::camera &cam)
+// {
+//     std::string error_mat_data_path = "../data/" + cam.id + "/caches";
+//     if (cam.hasCalib)
+//         cam.precision = cv::Mat(cv::Size(cam.calibWidth, cam.calibHeight), CV_32F, 0.0);
+//     else
+//         cam.precision = cv::Mat(cv::Size(cam.streamWidth, cam.streamHeight), CV_32F, 0.0);
 
-    std::ifstream error_mat;
-    error_mat.open(error_mat_data_path.c_str());
-    if (error_mat)
-    {
-        for (int y = 0; y < cam.calibHeight; y++)
-        { // height (number of rows)
-            for (int x = 0; x < cam.calibWidth; x++)
-            { // width (number of columns)
-                float tmp;
-                // skip first 4 values, then the 5th is precision
-                for (int z = 0; z < 4; z++)
-                    error_mat.read(reinterpret_cast<char *>(&tmp), sizeof(float));
+//     std::ifstream error_mat;
+//     error_mat.open(error_mat_data_path.c_str());
+//     if (error_mat)
+//     {
+//         for (int y = 0; y < cam.calibHeight; y++)
+//         { // height (number of rows)
+//             for (int x = 0; x < cam.calibWidth; x++)
+//             { // width (number of columns)
+//                 float tmp;
+//                 // skip first 4 values, then the 5th is precision
+//                 for (int z = 0; z < 4; z++)
+//                     error_mat.read(reinterpret_cast<char *>(&tmp), sizeof(float));
 
-                error_mat.read(reinterpret_cast<char *>(&tmp), sizeof(float));
-                cam.precision.at<float>(y, x) = tmp;
-            }
-        }
-    }
-}
+//                 error_mat.read(reinterpret_cast<char *>(&tmp), sizeof(float));
+//                 cam.precision.at<float>(y, x) = tmp;
+//             }
+//         }
+//     }
+// }
 
 std::vector<edge::camera> configure(int argc, char **argv)
 {
@@ -466,13 +458,12 @@ std::vector<edge::camera> configure(int argc, char **argv)
                     std::cout << "read 3" << std::endl;
 
         cameras[i].id = cameras_par[i].id;
+        cameras[i].dataPath = cameras_par[i].dataPath;
         cameras[i].input = cameras_par[i].input;
         cameras[i].framesToProcess = cameras_par[i].framesToProcess;
         cameras[i].portCommunicator = cameras_par[i].portCommunicator;
                     std::cout << "read 4" << std::endl;
 
-        cameras[i].streamWidth = cameras_par[i].streamWidth;
-        cameras[i].streamHeight = cameras_par[i].streamHeight;
         cameras[i].filterType = cameras_par[i].filterType;
         cameras[i].show = cameras_par[i].show;
                     std::cout << "read 5" << std::endl;

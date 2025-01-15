@@ -1,18 +1,22 @@
 cameras:
   - maskfile: !<!> ../data/masks/0001_mask.jpg  
-    #input: !<!> "rtsp://X:X@192.168.121.250"
-    input: !<!> /root/barcelona/idelfons/videos/20230721_092248_cam01h264.mp4
-    # input: !<!> /root/data/florencia/SCWC2022Videos/Resistenza/Video_resistenza_20936_pedestrian_tram.mp4
-    pmatrix: !<!> /root/barcelona/idelfons/pmat/projMat0001_4pts_centro_utm_ACTIVE.txt
-    # pmatrix: !<!> /root/data/florencia/resistenza/pmat/projMat.txt
-    #resolution: !<!> 800x450
-    cameraCalib: !<!> ../data/calib_cameras/0001.params
     id: "0001"
-    gstreamer: false
+    input: !<!> "239.255.12.42"
+    #input: !<!> /root/b2drop/barcelona/idelfons/videos/20230721_092248_cam01h264.mp4
+    gstreamer: true
+    gstreamer.height: 1280
+    gstreamer.width: 720
+    dataPath: !<!> /root/b2drop/barcelona/idelfons/
+    pmatrix: !<!> /root/b2drop/barcelona/idelfons/pmat/projMat0001_4pts_centro_utm_ACTIVE.txt
+    cameraCalib: !<!> ../data/calib_cameras/0001.params
     framesToProcess: 116013
-    portCommunicator: 8885
+    portCommunicator: 8884
     encrypted: 0
     maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg
+
+    # input: !<!> /root/data/florencia/SCWC2022Videos/Resistenza/Video_resistenza_20936_pedestrian_tram.mp4
+    # pmatrix: !<!> /root/data/florencia/resistenza/pmat/projMat.txt
+    #resolution: !<!> 800x450
   # - maskfile: !<!> ../data/masks/0001_mask.jpg  
   #   #input: !<!> "rtsp://X:X@192.168.121.250"
   #   input: !<!> /root/barcelona/idelfons/videos/20230721_092250_cam02h264_.mp4
@@ -284,13 +288,11 @@ cameras:
   #   pmatrix: !<!> ../data/pmat_new/pmat_07-03-6315_10p.txt
   #   maskFileOrient: !<!> ../data/masks_orient/3840-2160_mask_null.jpg
 net: !<!> ../yolov6.engine.rt
-width: 960
 classes: 10
 type: !<!> y
-tif: !<!> /root/florencia/batoni/tiff/batoni.tif
-height: 540
+tif: !<!> /root/b2drop/florencia/batoni/tiff/batoni.tif
 password: ""
 filter: 1
-stream: 0
-record: 0
+stream: 1
+record: 1
 recordBoxes: 1

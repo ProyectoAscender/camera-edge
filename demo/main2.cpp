@@ -2,7 +2,7 @@
 #include <string>
 #include <iostream>
 
-#include "YoloV8Engine.hpp"
+#include "YoloV6Engine.hpp"
 
 const std::string VIDEO_FILE = ".mp4";
 const std::string ENGINE_FILE = ".engine";
@@ -20,7 +20,7 @@ int main(int argc, char *argv[], char *envp[]) {
     cv::Mat frame1;
     cap >> frame1;
 
-    YoloV8Engine engine(ENGINE_FILE, frame1.cols, frame1.rows, CONF_THRESH);
+    YoloV6Engine engine(ENGINE_FILE, frame1.cols, frame1.rows, CONF_THRESH);
 
     while (true) {
         cv::Mat frame;
