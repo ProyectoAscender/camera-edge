@@ -1,6 +1,5 @@
 .devcontainer
 build/
-.vscode/
 data/output/*
 data/*mp4
 data/all_camera.yaml

@@ -1,0 +1,63 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "cppbuild",
+			"label": "CMAKE",
+			"command": "cmake",
+			"args": ["-DCMAKE_BUILD_TYPE=RelWithDebInfo", "-Wno-dev", ".."],
+			"options": {
+				"cwd": "${workspaceRoot}/build"
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"detail": "Executes: cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -Wno-dev .."
+		},
+		{
+            "type": "shell",
+            "label": "MAKE",
+			"command": "cmake --build . ",
+			"options": {
+				"cwd": "${workspaceFolder}/build"
+			},
+			"problemMatcher": {
+				"base": "$gcc", 
+				"fileLocation": ["relative", "${workspaceFolder}/build"]
+			},
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Executes: cmake --build .",
+			"presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+        },
+		{
+			"type": "cppbuild",
+			"label": "CMAKE DEBUG",
+			"command": "cmake",
+			"args": [" -DCMAKE_BUILD_TYPE=Debug ..", "-Wno-dev", ".."],
+			"options": {
+				"cwd": "${workspaceRoot}/build"
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"detail": "Executes: cmake -DCMAKE_BUILD_TYPE=Debug -Wno-dev .."
+		},
+	]
+}
+
