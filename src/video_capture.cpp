@@ -16,10 +16,10 @@ void *readVideoCapture( void *ptr )
     edge::video_cap_data* data = (edge::video_cap_data*) ptr;
     auto stream_mode = data->gstreamer ? cv::CAP_GSTREAMER : cv::CAP_FFMPEG;
 
-
-    std::cout<<"Thread: "<<data->input<< " started" <<std::endl;
-    std::cout<<" data->gstreamer: "<<  data->gstreamer <<std::endl;
-    std::cout<<"stream_mode: "<<stream_mode <<std::endl;
+    std::cout<<"\tVC-> Thread: "<<data->input<< " started" <<std::endl;
+    std::cout<<"\tVC-> Data->gstreamer: "<<  data->gstreamer <<std::endl;
+    std::cout<<"\tVC-> Stream_mode: "<<stream_mode <<std::endl;
+    std::cout<<"\n" <<std::endl;
 
     cv::VideoCapture cap("udpsrc port=5000 multicast-group=" + std::string(data->input) +
                          " auto-multicast=true caps=application/x-rtp,media=video,clock-rate=90000,encoding-name=H264 ! rtph264depay ! h264parse ! avdec_h264 ! videoconvert ! appsink",
@@ -54,7 +54,7 @@ void *readVideoCapture( void *ptr )
     uint64_t timestamp_acquisition = 0;
     unsigned int contador = 0;
     edge::Profiler prof("Video capture" + std::string(data->input));
-    std::cout << " -> CASO VC - pre while " << gRun << std::endl;
+    std::cout << "\n\nSTARTING VIDEO PROCESSING..." << std::endl;
 
     while(gRun) {
         if(!data->frameConsumed) {
@@ -62,7 +62,7 @@ void *readVideoCapture( void *ptr )
             usleep(500);
             continue;
         }
-        std::cout<<" -> Frame acquisition -- " << std::endl;
+        // std::cout<<"\nVC-> Frame acquisition\n" << std::endl;
         prof.tick("Frame acquisition");
         cap >> frame; 
         timestamp_acquisition = getTimeMs();
@@ -75,12 +75,7 @@ void *readVideoCapture( void *ptr )
             cap.open(data->input);
             printf("cap reinitialize\n");
             continue;
-        }
-        //resizing the image to 960x540 (the DNN takes in input 544x320)
-        // prof.tick("Frame resize");
-        // cv::resize (frame, resized_frame, cv::Size(new_width, new_height)); 
-        // prof.tock("Frame resize");
-         
+        }         
 
         prof.tick("Frame copy");
         data->mtxF.lock();

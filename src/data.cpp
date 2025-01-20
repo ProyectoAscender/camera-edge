@@ -5,7 +5,7 @@ std::ostream& operator<<(std::ostream& os, const edge::camera_params& c){
     
     os<<"----------------------------------------------------\n";
     os<< "id \t\t\t" << c.id <<std::endl;
-    os<< "framesToProcess \t\t\t" << c.framesToProcess <<std::endl;
+    os<< "framesToProcess \t" << c.framesToProcess <<std::endl;
     os<< "input \t\t\t" << c.input<<std::endl;
     os<< "resolution \t\t" << c.resolution<<std::endl;
     os<< "pmatrixPath \t\t" << c.pmatrixPath <<std::endl;
@@ -13,7 +13,7 @@ std::ostream& operator<<(std::ostream& os, const edge::camera_params& c){
     os<< "cameraCalibPath \t" << c.cameraCalibPath <<std::endl;
     os<< "maskFileOrientPath \t" << c.maskFileOrientPath <<std::endl;
     os<< "show \t\t\t" << (int)c.show <<std::endl;
-    os<<"----------------------------------------------------\n";
+    os<<"----------------------------------------------------\n\n";
     return os;
 }
 
@@ -21,7 +21,7 @@ std::ostream& operator<<(std::ostream& os, const edge::camera& c){
 
     os<<"----------------------------------------------------\n";
     os<< "id \t\t\t" << c.id <<std::endl;
-    os<< "framesToProcess \t\t\t" << c.framesToProcess <<std::endl;
+    os<< "framesToProcess \t" << c.framesToProcess <<std::endl;
     os<< "input \t\t\t" << c.input<<std::endl;
     os<< "ipCommunicator \t\t" << c.ipCommunicator<<std::endl;
     os<< "portCommunicator \t" << c.portCommunicator<<std::endl;
@@ -33,7 +33,7 @@ std::ostream& operator<<(std::ostream& os, const edge::camera& c){
     os<< "calibMat: \n" << c.calibMat <<std::endl;
     os<< "prjMat: \n" << c.prjMat <<std::endl;
     os<< "invPrjMat: \n" << c.invPrjMat <<std::endl;
-    os<<"----------------------------------------------------\n";
+    os<<"----------------------------------------------------\n\n";
     return os;
 }
 

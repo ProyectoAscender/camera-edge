@@ -32,7 +32,7 @@ void sendUDPMessage2(int sockfd, char* data, unsigned int *data_size, sockaddr_i
         std::cerr << "[ERROR] Datos inválidos para enviar." << std::endl;
         return;
     }
-    std::cout << "SENT TO" << std::endl;
+
     // Enviar el mensaje usando sendto
     ssize_t bytes_sent = sendto(sockfd, data, *data_size, 0, (struct sockaddr*)&clientaddr, sizeof(clientaddr));
     if (bytes_sent < 0) {
@@ -81,7 +81,7 @@ int setupUDPConnection(sockaddr_in& servaddr, std::string& socketPort) {
     std::cout << "Listdening to tcp://0.0.0.0:" << socketPort << " waiting for COMPSs ack to start" << std::endl;
     zmq::socket_t *app_socket = new zmq::socket_t(context, ZMQ_REP);
     app_socket->bind("tcp://0.0.0.0:" + socketPort);
-    app_socket->recv(&unimportant_message); // wait for python workflow to ack to start processing frames
+    app_socket->recv(unimportant_message); // wait for python workflow to ack to start processing frames
     app_socket->close();
     delete app_socket;
 
@@ -121,7 +121,7 @@ int openUDPsockets(std::string& socketPort){
     std::cout << "Listdening to tcp://0.0.0.0:" << socketPort << " waiting for COMPSs ack to start" << std::endl;
     zmq::socket_t *app_socket = new zmq::socket_t(context, ZMQ_REP);
     app_socket->bind("tcp://0.0.0.0:" + socketPort);
-    app_socket->recv(&unimportant_message); // wait for python workflow to ack to start processing frames
+    app_socket->recv(unimportant_message); // wait for python workflow to ack to start processing frames
     app_socket->close();
     delete app_socket;
 
@@ -181,45 +181,27 @@ char* prepareMessageUDP2( const std::vector<Box> &boxes, unsigned int n_frame, s
     // We need to keep pointer initial position
     char *buffer_origin = buffer;
     unsigned long long timestamp = getTimeMs();
-    std::cout << "---->" <<  boxes.size()  << std::endl;
 
     for (int i = 0; i < boxes.size(); i++) {
-    // for (int i = 0; i < 2; i++) {            // for debugging
-
-            std::cout << "----> UDP BOXES SIZE:" <<  boxes.size()  << std::endl;
-
+    // for (int i = 0; i < 3; i++) {            // for debugging
             std::string result;
             for(int i = 0; i < cam_id.size(); i++) {
                 char buffer[20];
                 sprintf(buffer, "%X ", cam_id[i]);
                 result += buffer;
             }
-            std::cout << "hexval1: " << result << std::endl;
 
+
+            // std::cout << "hexval1: " << result << std::endl;
             // unsigned char* cam_id2 = cam_id.c_str();
             // std::cout << "hexval___: " <<  cam_id2  << std::endl;
 
         //flag, cam_id , n_frame, timestamp , box_x, box_y, box_w, box_h, score, class
-        // size_t size_of_data = snprintf(buffer, 60, "%02x%04x%04x%016lx%04x%08lx%04x%04x%04x%04x",
-        std::cout<<"Box : " << i << " - "<< boxes[i].x << std::endl;
-        std::cout<<"Box : " << i << " - "<< boxes[i].y << std::endl;
-        std::cout<<"Box : " << i << " - "<< boxes[i].w << std::endl;
-        std::cout<<"Box : " << i << " - "<< boxes[i].h << std::endl;
-
-        // size_t size_of_data = snprintf(buffer, 60, "%02x%02x%02x%02x%02x%04x%016llx%04x%04x%04x%04x", //%08lx%04x",
-        //         true, cam_id[0], cam_id[1], cam_id[2], cam_id[3], n_frame, timestamp, 
-        //         int(boxes[i].x), int(boxes[i].y), 
-        //         int(boxes[i].w), int(boxes[i].h));
-        //         // *(unsigned long*)&boxes[i].prob, boxes[i].cl);
-
-
-        // size_t size_of_data = snprintf(buffer, CHAR_BOX_SIZE + 1, "%02x%02x%02x%02x%02x%04x%016llx%04x%04x%04x%04x",
-        //                                 true, cam_id[0], cam_id[1], cam_id[2], cam_id[3], 
-        //                                 n_frame, timestamp,
-        //                                 int(boxes[i].x), int(boxes[i].y), 
-        //                                 int(boxes[i].w), int(boxes[i].h)
-        //                                 );
-        // // *(unsigned long*)&boxes[i].prob, boxes[i].cl);
+        // // size_t size_of_data = snprintf(buffer, 60, "%02x%04x%04x%016lx%04x%08lx%04x%04x%04x%04x",
+        // std::cout<<"Box : " << i << " - "<< boxes[i].x << std::endl;
+        // std::cout<<"Box : " << i << " - "<< boxes[i].y << std::endl;
+        // std::cout<<"Box : " << i << " - "<< boxes[i].w << std::endl;
+        // std::cout<<"Box : " << i << " - "<< boxes[i].h << std::endl;
 
 
         size_t size_of_data = snprintf(buffer, CHAR_BOX_SIZE + 1,
@@ -239,11 +221,12 @@ char* prepareMessageUDP2( const std::vector<Box> &boxes, unsigned int n_frame, s
 
 
 
-        std::cout << "Preparing UDP Meesage of length "  << size_of_data  <<  std::endl;
-        std::cout << "Preparing UDP Meesage Content BUFFER- :"  << buffer <<  std::endl;
+        // std::cout << "Preparing UDP Meesage of length "  << size_of_data  <<  std::endl;
+        std::cout << "\tBox "  << i <<  std::endl;
+        std::cout << "\tPreparing UDP Meesage Content: "  << buffer <<  std::endl;
         // Set position at the end of the buffer to insert there next iteration
         buffer += size_of_data ;
-        std::cout << "Preparing UDP Meesage TOTAL:"  << strlen(buffer_origin) <<  std::endl;
+        std::cout << "\tUDP Meesage of length:"  << strlen(buffer_origin) << std::endl;
 
     }
 
@@ -259,19 +242,17 @@ char* prepareMessageUDP2( const std::vector<Box> &boxes, unsigned int n_frame, s
 void *elaborateSingleCamera(void *ptr)
 {
     edge::camera* cam = (edge::camera*) ptr;
-    std::cout<<"Starting camera: "<< cam->id << std::endl;
+    std::cout<<"STARTING CAMERA_ELABORATION..." << std::endl;
+    std::cout<<"\tStarting camera: "<< cam->id << std::endl;
     pthread_t video_cap;
     edge::video_cap_data data;
     data.input          = (char*)cam->input.c_str();
-    std::cout<<"Camera input: "<< data.input << std::endl;
+    std::cout<<"\tCamera input: "<< data.input << std::endl;
     data.camId          = cam->id;
     data.frameConsumed  = true;
     data.framesToProcess = cam->framesToProcess;
     data.gstreamer      = cam->gstreamer;
     data.dataPath = cam->dataPath;
-    MasaMessage message;
-    Communicator<MasaMessage> communicator;
-        std::cout<<"Starting camera: "<< cam->id << std::endl;
 
     sockaddr_in servaddr = {};
     sockaddr_in clientaddr = {};
@@ -283,7 +264,12 @@ void *elaborateSingleCamera(void *ptr)
     if (pthread_create(&video_cap, NULL, readVideoCapture, (void *)&data)){
         fprintf(stderr, "Error creating thread\n");
         return (void *)1;
+    } else {
+        std::cout<<"\nLAUNCHING VIDEO CAPTURE..." << std::endl;
     }
+
+
+
     usleep(3000000);
     int sockfd = setupUDPConnection(servaddr, camCommunicatorPort);
     if (sockfd < 0) {
@@ -293,7 +279,7 @@ void *elaborateSingleCamera(void *ptr)
     char buffer_recv[1024];
     ssize_t bytes_received = recvfrom(sockfd, buffer_recv, sizeof(buffer_recv), 0,
                                         (struct sockaddr*)&clientaddr, &clientaddr_len);
-    std::cout << "recvfrom finalizado bytes)" << std::endl;
+
     if (bytes_received < 0) {
         perror("[ERROR] Error al recibir datos");
     }
@@ -301,7 +287,7 @@ void *elaborateSingleCamera(void *ptr)
     // Obtener IP del cliente
     char client_ip[INET_ADDRSTRLEN] = {0};
     inet_ntop(AF_INET, &clientaddr.sin_addr, client_ip, sizeof(client_ip));
-    std::cout << "[INFO] Solicitud recibida de " << client_ip << ":" << ntohs(clientaddr.sin_port) << std::endl;
+    std::cout << "\n\n[INFO] Solicitud recibida de " << client_ip << ":" << ntohs(clientaddr.sin_port) << std::endl;
 
     // Datos a enviar en esta iteración (pueden variar)
     char* camData = new char[bufferSize];
@@ -319,7 +305,7 @@ void *elaborateSingleCamera(void *ptr)
     sendUDPMessage2(sockfd, camData, &length, clientaddr);
 
 
-    std::cout << "- - - - -> CAM INFO SENT  " << std::endl;
+    std::cout << "- - - - -> CAM INFO SENT\n\n" << std::endl;
     
     
     std::vector<cv::Mat> batch_frame;
@@ -356,7 +342,6 @@ void *elaborateSingleCamera(void *ptr)
     YoloV6Engine engine("../yolov6_agx13.engine", data.frame.cols, data.frame.rows, 0.5);
     
     unsigned int n_frame=0;
-    std::cout << " -> CASO CE - pre while " << gRun << std::endl;
 
 
 
@@ -389,7 +374,7 @@ void *elaborateSingleCamera(void *ptr)
             prof.tock("Copy frame");
             n_frame++;
             
-            std::cout << "A: n_frame = " << n_frame <<std::endl;
+            std::cout << "\n\nFrame " << n_frame << " being processed..." <<std::endl;
 
             //inference
             prof.tick("Inference");
@@ -402,29 +387,22 @@ void *elaborateSingleCamera(void *ptr)
             prof.tock("Inference");
 
             if (recordBoxes) boxes_video << *frame;
-            std::cout << "B: n_frame = " << n_frame <<std::endl;
 
 
             prof.tick("Prepare message"); 
 
             if (use_udp_socket){
-                std::cout << "B: n_frame = " << n_frame <<std::endl;
-
                 unsigned int message_size;
                 // Send data trough UDP: box_vector.size()
                 // char data[43 * box_vector.size()];
                 char *data = prepareMessageUDP2(boxes, n_frame, cam->id, &message_size);
                 // std::cout << "Press Enter to continue…" << std::endl;
                 // cin.get();
-                std::cout << "CCCC: n_frame = " << n_frame <<std::endl;
+
                 sendUDPMessage2(sockfd, data, &message_size, clientaddr);
             }
 
-            //send the data if the message is not empty
-
-            if (!message.objects.empty()){
-                communicator.send_message(&message, cam->portCommunicator);
-            }
+            
             prof.tock("Prepare message");   
 
             prof.tock("Total time");   

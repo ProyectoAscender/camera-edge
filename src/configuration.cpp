@@ -1,7 +1,6 @@
 #include "configuration.h"
 #include "utils.h"
 
-
 std::string executeCommandAndGetOutput(const char *command)
 {
     FILE *fpipe;
@@ -62,14 +61,12 @@ void readParamsFromYaml(const std::string &params_path, const std::vector<std::s
     YAML::Node cameras_yaml = config["cameras"];
     bool use_info;
     int n_cameras = 0;
-    std::cout << "AAAAAAAAA" << std::endl;
     for (int i = 0; i < cameras_yaml.size(); i++)
     {
-            std::cout << "BBBB" << std::endl;
 
         std::string camera_id = cameras_yaml[i]["id"].as<std::string>();
         std::string dataPath = cameras_yaml[i]["dataPath"].as<std::string>();
-        
+
         // save infos only of the cameras whose ids where passed as args
         use_info = false;
         for (auto id : cameras_ids)
@@ -83,7 +80,6 @@ void readParamsFromYaml(const std::string &params_path, const std::vector<std::s
         cameras_par[n_cameras - 1].dataPath = dataPath;
         cameras_par[n_cameras - 1].framesToProcess = cameras_yaml[i]["framesToProcess"].as<int>();
         cameras_par[n_cameras - 1].portCommunicator = cameras_yaml[i]["portCommunicator"].as<int>();
-                    std::cout << "BBBB2" << std::endl;
 
         if (cameras_yaml[i]["gstreamer"].as<bool>())
         {
@@ -93,7 +89,6 @@ void readParamsFromYaml(const std::string &params_path, const std::vector<std::s
         {
             cameras_par[n_cameras - 1].gstreamer = false;
         }
-                        std::cout << "BBBB3" << std::endl;
 
         if (cameras_par[n_cameras - 1].gstreamer)
         {
@@ -133,7 +128,6 @@ void readParamsFromYaml(const std::string &params_path, const std::vector<std::s
                     cameras_par[n_cameras - 1].input = cameras_par[n_cameras - 1].input + "?resolution=" + cameras_par[n_cameras - 1].resolution;
             }
         }
-                    std::cout << "BBBB4" << std::endl;
 
         cameras_par[n_cameras - 1].pmatrixPath = cameras_yaml[i]["pmatrix"].as<std::string>();
         cameras_par[n_cameras - 1].filterType = filter_type;
@@ -145,18 +139,13 @@ void readParamsFromYaml(const std::string &params_path, const std::vector<std::s
             cameras_par[n_cameras - 1].maskFileOrientPath = cameras_yaml[i]["maskFileOrient"].as<std::string>();
         if (cameras_yaml[i]["maskfile"])
             cameras_par[n_cameras - 1].maskfilePath = cameras_yaml[i]["maskfile"].as<std::string>();
-                                std::cout << "BBBB5" << std::endl;
 
         // simple check: if the input contains rtsp string and stream is set to false, then raise ad exception
         if (!stream && cameras_par[n_cameras - 1].input.find("rtsp") != std::string::npos)
         {
             FatalError("Error: it's a rtsp stream, so you have to change the field in the yaml file\n");
         }
-                                        std::cout << "BBBB6" << std::endl;
-
     }
-                                    std::cout << "BBBB¡7" << std::endl;
-
 }
 
 bool readParameters(int argc, char **argv, std::vector<edge::camera_params> &cameras_par, std::string &net, char &type, int &n_classes, std::string &tif_map_path)
@@ -234,6 +223,8 @@ bool readParameters(int argc, char **argv, std::vector<edge::camera_params> &cam
     std::vector<std::string> cameras_ids;
     for (; optind < argc; optind++)
         cameras_ids.push_back(argv[optind]);
+    
+    std::cout << "\n\n" << std::endl;
 
     std::cout << cameras_ids.size() << " camera id(s) given: ";
     for (size_t i = 0; i < cameras_ids.size(); ++i)
@@ -259,8 +250,7 @@ bool readParameters(int argc, char **argv, std::vector<edge::camera_params> &cam
     }
     else
         readParamsFromYaml(params_path, cameras_ids, cameras_par, net, type, n_classes, tif_map_path);
-    
-    std::cout << "BBBBQ1" << std::endl;
+
 
     // if specified from command line, override parameters read from file
     if (read_net != "")
@@ -272,7 +262,6 @@ bool readParameters(int argc, char **argv, std::vector<edge::camera_params> &cam
     if (read_n_classes != 0)
         n_classes = read_n_classes;
 
-    std::cout << "BBBBQ1" << std::endl;
 
     std::cout << "Input parameters file in use:\t" << params_path << std::endl;
     std::cout << "Tif map in use:\t\t\t" << tif_map_path << std::endl;
@@ -375,7 +364,6 @@ void readCalibrationMatrix(const std::string &path, cv::Mat &calib_mat, cv::Mat 
     dist_coeff = coeff;
 }
 
-
 // void readCaches(edge::camera &cam)
 // {
 //     std::string error_mat_data_path = "../data/" + cam.id + "/caches";
@@ -438,41 +426,34 @@ std::vector<edge::camera> configure(int argc, char **argv)
     std::vector<edge::camera> cameras(cameras_par.size());
     for (size_t i = 0; i < cameras.size(); ++i)
     {
-            std::cout << "read 1" << cameras_par[i].cameraCalibPath << std::endl;
+        // std::cout << "read 1" << cameras_par[i].cameraCalibPath << std::endl;
 
         if (cameras_par[i].cameraCalibPath != "")
         {
             cameras[i].hasCalib = true;
-                        std::cout << "read 11" << cameras_par[i].cameraCalibPath << std::endl;
+            // std::cout << "read 11" << cameras_par[i].cameraCalibPath << std::endl;
 
             readCalibrationMatrix(cameras_par[i].cameraCalibPath,
                                   cameras[i].calibMat,
                                   cameras[i].distCoeff,
                                   cameras[i].calibWidth,
                                   cameras[i].calibHeight);
-            std::cout << "read 12" << cameras_par[i].cameraCalibPath << std::endl;
-
+            // std::cout << "read 12" << cameras_par[i].cameraCalibPath << std::endl;
         }
-                    std::cout << "read 2" << std::endl;
         readProjectionMatrix(cameras_par[i].pmatrixPath, cameras[i].prjMat);
-                    std::cout << "read 3" << std::endl;
 
         cameras[i].id = cameras_par[i].id;
         cameras[i].dataPath = cameras_par[i].dataPath;
         cameras[i].input = cameras_par[i].input;
         cameras[i].framesToProcess = cameras_par[i].framesToProcess;
         cameras[i].portCommunicator = cameras_par[i].portCommunicator;
-                    std::cout << "read 4" << std::endl;
 
         cameras[i].filterType = cameras_par[i].filterType;
         cameras[i].show = cameras_par[i].show;
-                    std::cout << "read 5" << std::endl;
 
         cameras[i].gstreamer = cameras_par[i].gstreamer;
         cameras[i].invPrjMat = cameras[i].prjMat.inv();
         cameras[i].dataset = dataset;
-                    std::cout << "read 6" << std::endl;
-
     }
 
     // initialize neural netwokr for each camera
@@ -489,7 +470,7 @@ std::vector<edge::camera> configure(int argc, char **argv)
     if (verbose)
     {
         for (int i = 0; i < 6; i++)
-            std::cout << adfGeoTransform[i] << " ;;";
+            // std::cout << adfGeoTransform[i] << " ;;";
         std::cout << std::endl;
     }
 
