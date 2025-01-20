@@ -26,7 +26,7 @@ using std::cin;
 //         }
 // }
 
-void sendUDPMessage2(int sockfd, char* data, size_t data_size, sockaddr_in& clientaddr) {
+void sendUDPMessage2(int sockfd, char* data, unsigned int *data_size, sockaddr_in& clientaddr) {
     // Validar datos de entrada
     if (data == nullptr || data_size == 0) {
         std::cerr << "[ERROR] Datos inválidos para enviar." << std::endl;
@@ -34,7 +34,7 @@ void sendUDPMessage2(int sockfd, char* data, size_t data_size, sockaddr_in& clie
     }
     std::cout << "SENT TO" << std::endl;
     // Enviar el mensaje usando sendto
-    ssize_t bytes_sent = sendto(sockfd, data, data_size, 0, (struct sockaddr*)&clientaddr, sizeof(clientaddr));
+    ssize_t bytes_sent = sendto(sockfd, data, *data_size, 0, (struct sockaddr*)&clientaddr, sizeof(clientaddr));
     if (bytes_sent < 0) {
         perror("[ERROR] Error al enviar el mensaje UDP");
     } else {
@@ -174,15 +174,18 @@ void GPS2pixel(double lat, double lon, int &x, int &y, double* adfGeoTransform)
 }
 
 
-char* prepareMessageUDP2( const std::vector<Box> &boxes, unsigned int n_frame, std::string cam_id) {
+char* prepareMessageUDP2( const std::vector<Box> &boxes, unsigned int n_frame, std::string cam_id, unsigned int *message_size) {
     
-    char* buffer= new char[60  * boxes.size()];
+    char* buffer= new char[CHAR_BOX_SIZE  * boxes.size() + 1];
     // unsigned char* Bytes = new unsigned char[41  * boxes.size()];
     // We need to keep pointer initial position
-    char *buffer_origin = buffer; 
+    char *buffer_origin = buffer;
     unsigned long long timestamp = getTimeMs();
     std::cout << "---->" <<  boxes.size()  << std::endl;
+
     for (int i = 0; i < boxes.size(); i++) {
+    // for (int i = 0; i < 2; i++) {            // for debugging
+
             std::cout << "----> UDP BOXES SIZE:" <<  boxes.size()  << std::endl;
 
             std::string result;
@@ -209,13 +212,32 @@ char* prepareMessageUDP2( const std::vector<Box> &boxes, unsigned int n_frame, s
         //         int(boxes[i].w), int(boxes[i].h));
         //         // *(unsigned long*)&boxes[i].prob, boxes[i].cl);
 
-        size_t size_of_data = snprintf(buffer, 60, "%02x%02x%02x%02x%02x%04x%016llx%04x%04x%04x%04x",
-                                        true, cam_id[0], cam_id[1], cam_id[2], cam_id[3], 
-                                        n_frame, timestamp,
-                                        int(boxes[i].x), int(boxes[i].y), 
-                                        int(boxes[i].w), int(boxes[i].h)
-                                        );
-        // *(unsigned long*)&boxes[i].prob, boxes[i].cl);
+
+        // size_t size_of_data = snprintf(buffer, CHAR_BOX_SIZE + 1, "%02x%02x%02x%02x%02x%04x%016llx%04x%04x%04x%04x",
+        //                                 true, cam_id[0], cam_id[1], cam_id[2], cam_id[3], 
+        //                                 n_frame, timestamp,
+        //                                 int(boxes[i].x), int(boxes[i].y), 
+        //                                 int(boxes[i].w), int(boxes[i].h)
+        //                                 );
+        // // *(unsigned long*)&boxes[i].prob, boxes[i].cl);
+
+
+        size_t size_of_data = snprintf(buffer, CHAR_BOX_SIZE + 1,
+                                        "%02x%02x%02x%02x%02x%04x%016llx%04x%04x%04x%04x%08x%04x",      // With everything
+                                        // "%02x%02x%02x%02x%02x%04x%016llx%04x%04x%04x%04x",                  // For testing
+                                        true,                                               // Flag (boolean, 1 byte, 2 hex digits)
+                                        cam_id[0], cam_id[1], cam_id[2], cam_id[3],         // Camera ID (4 bytes, 4 x 2 hex digits = 8 hex digits)
+                                        n_frame,                                            // Frame number (2 bytes, 4 hex digits)
+                                        timestamp,                                          // Timestamp (8 bytes, 16 hex digits)
+                                        int(boxes[i].x),                                    // Box x-coordinate (2 bytes, 4 hex digits)
+                                        int(boxes[i].y),                                    // Box y-coordinate (2 bytes, 4 hex digits)
+                                        int(boxes[i].w),                                    // Box width (2 bytes, 4 hex digits)
+                                        int(boxes[i].h),                                    // Box height (2 bytes, 4 hex digits)
+                                        *(unsigned int*)&boxes[i].prob,                     // Probability (4 bytes, 8 hex digits)
+                                        boxes[i].cl                                         // Class (2 bytes, 4 hex digits)
+                                    );
+
+
 
         std::cout << "Preparing UDP Meesage of length "  << size_of_data  <<  std::endl;
         std::cout << "Preparing UDP Meesage Content BUFFER- :"  << buffer <<  std::endl;
@@ -225,6 +247,9 @@ char* prepareMessageUDP2( const std::vector<Box> &boxes, unsigned int n_frame, s
 
     }
 
+
+    // Store length in message_size for the caller
+    *message_size = strlen(buffer_origin);
 
 
     return buffer_origin;
@@ -259,7 +284,7 @@ void *elaborateSingleCamera(void *ptr)
         fprintf(stderr, "Error creating thread\n");
         return (void *)1;
     }
-
+    usleep(3000000);
     int sockfd = setupUDPConnection(servaddr, camCommunicatorPort);
     if (sockfd < 0) {
         return (void *)1; // Terminar si no se pudo configurar
@@ -280,18 +305,23 @@ void *elaborateSingleCamera(void *ptr)
 
     // Datos a enviar en esta iteración (pueden variar)
     char* camData = new char[bufferSize];
+
     std::cout << "- - - - -> SENDING CAM INFO :::: "<< data.camId << std::endl;
     size_t size_of_data = snprintf(camData, bufferSize, "%s|%s|%d|%d|%d|%d|%s",
                                     "Sent  UDP: ",
                                     data.camId.c_str(), data.gstreamer, cam->framesToProcess, 
-                                    data.height, data.width, data.dataPath.c_str());
+                                    data.frame.rows, data.frame.cols, data.dataPath.c_str());
     std::cout << "- - - - -> SENDING CAM INFO  " << camData << std::endl;
     std::cout << "- - - - -> CAM INFO SIZE  " << strlen(camData) << std::endl;
-    sendUDPMessage2(sockfd, camData, strlen(camData), clientaddr);
+    // sendUDPMessage2(sockfd, camData, strlen(camData), clientaddr);
+
+    unsigned int length = (unsigned int)strlen(camData);
+    sendUDPMessage2(sockfd, camData, &length, clientaddr);
+
+
     std::cout << "- - - - -> CAM INFO SENT  " << std::endl;
     
     
-    cv::Mat frame;
     std::vector<cv::Mat> batch_frame;
     // std::vector<cv::Mat> dnn_input;
     cv::Mat distort;
@@ -316,82 +346,80 @@ void *elaborateSingleCamera(void *ptr)
     if (recordBoxes){
         boxes_video.open("../data/output/boxes_cam" +
                           data.camId  + "_" + 
-                          std::to_string(data.width)  + "x" +
-                          std::to_string(data.height) + "_" +
+                          std::to_string(data.frame.cols)  + "x" +
+                          std::to_string(data.frame.rows) + "_" +
                           std::to_string(data.framesToProcess) + "frames.mp4",
                           cv::VideoWriter::fourcc('M','P','4','V'), 30, cv::Size(data.width, data.height));
     }
     
     // Declaring UDP variables
-    YoloV6Engine engine("../yolov6.engine", data.width, data.height, 0.5);
+    YoloV6Engine engine("../yolov6_agx13.engine", data.frame.cols, data.frame.rows, 0.5);
     
     unsigned int n_frame=0;
     std::cout << " -> CASO CE - pre while " << gRun << std::endl;
+
+
+
+    // Pinned memory allocation
+    void* pHost;
+    checkCuda(cudaHostAlloc(&pHost,
+                            data.frame.cols * data.frame.rows * 3,
+                            cudaHostAllocPortable | cudaHostAllocMapped | cudaHostAllocWriteCombined));
+    cv::Mat *frame = new cv::Mat(data.frame.rows, data.frame.cols, CV_8UC3, pHost);
+
+
+
     while(gRun){
         prof.tick("Total time");
         batch_frame.clear();
         //copy the frame that the last frame read by the video capture thread
         prof.tick("Copy frame");
         data.mtxF.lock();
-        distort = data.frame.clone();
+        data.frame.copyTo(*frame);
+
         //std::cout << " Copying in a new iteration" << std::endl;
 
         timestamp_acquisition = data.tStampMs;
         new_frame = data.frameConsumed;
         data.frameConsumed = true;
         data.mtxF.unlock();
-        //std::cout << " ->ELABORATION  FRAME: " <<  distort.empty() << std::endl;
-        if(!distort.empty() && !new_frame) {
+       
+        if(!frame->empty() && !new_frame) {
+            batch_frame.push_back(*frame);
+            prof.tock("Copy frame");
             n_frame++;
             
-            if (n_frame % 1 == 0){
-
-            prof.tock("Copy frame");
             std::cout << "A: n_frame = " << n_frame <<std::endl;
 
-            //eventual undistort 
-            prof.tick("frame=distort");
-         
-            frame = distort;
-            
-
-            prof.tock("frame=distort");
-            batch_frame.push_back(frame);
             //inference
             prof.tick("Inference");
 
-            engine.preprocess(frame);
+            engine.preprocess(*frame);
             engine.infer();
             const auto boxes = engine.postprocess();
-
             printf("Number of objects detected: %ld\n", boxes.size());
-            
-            
-            // dnn_input.clear();
-            // dnn_input.push_back(frame.clone());
-            // cam->detNN->update(dnn_input);
-            // detected = cam->detNN->detected;
+
             prof.tock("Inference");
 
-            // cam->detNN->draw(batch_frame);
-            if (recordBoxes) boxes_video << frame;
+            if (recordBoxes) boxes_video << *frame;
             std::cout << "B: n_frame = " << n_frame <<std::endl;
 
+
+            prof.tick("Prepare message"); 
 
             if (use_udp_socket){
                 std::cout << "B: n_frame = " << n_frame <<std::endl;
 
-                unsigned int size;
+                unsigned int message_size;
                 // Send data trough UDP: box_vector.size()
                 // char data[43 * box_vector.size()];
-                char *data = prepareMessageUDP2(boxes, n_frame, cam->id);
+                char *data = prepareMessageUDP2(boxes, n_frame, cam->id, &message_size);
                 // std::cout << "Press Enter to continue…" << std::endl;
                 // cin.get();
                 std::cout << "CCCC: n_frame = " << n_frame <<std::endl;
-                sendUDPMessage2(sockfd, data, 245, clientaddr);
+                sendUDPMessage2(sockfd, data, &message_size, clientaddr);
             }
 
-            prof.tick("Prepare message"); 
             //send the data if the message is not empty
 
             if (!message.objects.empty()){
@@ -402,7 +430,6 @@ void *elaborateSingleCamera(void *ptr)
             prof.tock("Total time");   
             if (verbose) 
                 prof.printStats();  
-            } // if -> jump with %
 
         } // if -> image empty
         else 
@@ -426,6 +453,8 @@ void *elaborateSingleCamera(void *ptr)
     checkCuda( cudaFree(d_output));
     checkCuda( cudaFree(d_map1));
     checkCuda( cudaFree(d_map2));
+    checkCuda(cudaFreeHost(pHost));
+    delete frame;
 
     if(use_udp_socket) close(sockfd);
 

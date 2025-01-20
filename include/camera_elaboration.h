@@ -15,12 +15,18 @@
 // #include "tkDNN/DetectionNN.h"
 
 
+// #define CHAR_BOX_SIZE 14
+// #define CHAR_BOX_SIZE 46
+#define CHAR_BOX_SIZE 58
+
+
+
 void pixel2GPS(const int x, const int y, double &lat, double &lon, double* adfGeoTransform);
 void GPS2pixel(double lat, double lon, int &x, int &y, double* adfGeoTransform);
 
 void printBufferHex(const char* buffer, size_t size);
 
-char* prepareMessageUDP2(const std::vector<Box> &boxes, unsigned int n_frame, std::string cam_id);
+char* prepareMessageUDP2(const std::vector<Box> &boxes, unsigned int n_frame, std::string cam_id, unsigned int *message_size);
 void *elaborateSingleCamera(void *ptr);
 
 #endif /*CAMERAELABORATION_H*/
