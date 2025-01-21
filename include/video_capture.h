@@ -26,6 +26,7 @@ struct video_cap_data
     bool frameConsumed  = false;
     bool gstreamer      = false;
     std::string dataPath         = "";
+    unsigned int frameCounter = 0;  // Frame counter added here
 };
 }
 

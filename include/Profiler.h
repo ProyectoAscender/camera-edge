@@ -47,7 +47,7 @@ public:
         timers[timer_name].diff.push_back(diff);
     }
 
-    void printStats(int interval = 100){
+    void printStats(int interval = 20){
         bool print = false;
         for (auto& t : timers)
             if (t.second.diff.size() == interval) {

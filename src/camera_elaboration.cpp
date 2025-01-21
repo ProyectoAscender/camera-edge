@@ -174,16 +174,17 @@ void GPS2pixel(double lat, double lon, int &x, int &y, double* adfGeoTransform)
 }
 
 
-char* prepareMessageUDP2( const std::vector<Box> &boxes, unsigned int n_frame, std::string cam_id, unsigned int *message_size) {
-    
-    char* buffer= new char[CHAR_BOX_SIZE  * boxes.size() + 1];
+char* prepareMessageUDP2( const std::vector<Box> &boxes, unsigned int *frameCounter, std::string cam_id, unsigned int *message_size, uint64_t *timestamp_acquisition) {
+    char* buffer = new char[CHAR_BOX_SIZE  * boxes.size() + 1];
     // unsigned char* Bytes = new unsigned char[41  * boxes.size()];
     // We need to keep pointer initial position
     char *buffer_origin = buffer;
-    unsigned long long timestamp = getTimeMs();
+    // unsigned long long timestamp = getTimeMs();
+
+
 
     for (int i = 0; i < boxes.size(); i++) {
-    // for (int i = 0; i < 3; i++) {            // for debugging
+    // for (int i = 0; i < 20; i++) {            // for debugging
             std::string result;
             for(int i = 0; i < cam_id.size(); i++) {
                 char buffer[20];
@@ -209,8 +210,8 @@ char* prepareMessageUDP2( const std::vector<Box> &boxes, unsigned int n_frame, s
                                         // "%02x%02x%02x%02x%02x%04x%016llx%04x%04x%04x%04x",                  // For testing
                                         true,                                               // Flag (boolean, 1 byte, 2 hex digits)
                                         cam_id[0], cam_id[1], cam_id[2], cam_id[3],         // Camera ID (4 bytes, 4 x 2 hex digits = 8 hex digits)
-                                        n_frame,                                            // Frame number (2 bytes, 4 hex digits)
-                                        timestamp,                                          // Timestamp (8 bytes, 16 hex digits)
+                                        *frameCounter,                                      // Frame number (2 bytes, 4 hex digits)
+                                        (unsigned long long)*timestamp_acquisition,         // Timestamp from video_capture (8 bytes, 16 hex digits)
                                         int(boxes[i].x),                                    // Box x-coordinate (2 bytes, 4 hex digits)
                                         int(boxes[i].y),                                    // Box y-coordinate (2 bytes, 4 hex digits)
                                         int(boxes[i].w),                                    // Box width (2 bytes, 4 hex digits)
@@ -219,21 +220,21 @@ char* prepareMessageUDP2( const std::vector<Box> &boxes, unsigned int n_frame, s
                                         boxes[i].cl                                         // Class (2 bytes, 4 hex digits)
                                     );
 
-
+        buffer += size_of_data ;
 
         // std::cout << "Preparing UDP Meesage of length "  << size_of_data  <<  std::endl;
-        std::cout << "\tBox "  << i <<  std::endl;
-        std::cout << "\tPreparing UDP Meesage Content: "  << buffer <<  std::endl;
+        // std::cout << "\tBox "  << i <<  std::endl;
+        // std::cout << "\tPreparing UDP Meesage Content: "  << buffer <<  std::endl;
         // Set position at the end of the buffer to insert there next iteration
-        buffer += size_of_data ;
-        std::cout << "\tUDP Meesage of length:"  << strlen(buffer_origin) << std::endl;
+        
+        // std::cout << "\tUDP Meesage of length:"  << strlen(buffer_origin) << std::endl;
 
     }
 
 
     // Store length in message_size for the caller
     *message_size = strlen(buffer_origin);
-
+    
 
     return buffer_origin;
 
@@ -303,22 +304,28 @@ void *elaborateSingleCamera(void *ptr)
 
     unsigned int length = (unsigned int)strlen(camData);
     sendUDPMessage2(sockfd, camData, &length, clientaddr);
+    delete camData;
 
 
     std::cout << "- - - - -> CAM INFO SENT\n\n" << std::endl;
     
+
+    std::cout<<"\nWAITING FOR SMARTICITY TO BE READY..." << std::endl;
+    usleep(45000000);
+
+
     
     std::vector<cv::Mat> batch_frame;
     // std::vector<cv::Mat> dnn_input;
     cv::Mat distort;
     uint64_t timestamp_acquisition = 0;
+    unsigned int frameCounter = 0;
     cv::Mat map1, map2;
 
     // std::vector<tk::dnn::box>       detected;
 
     cv::VideoWriter boxes_video;
     double north, east;
-    bool ce_verbose = false;
     bool first_iteration = true; 
     bool new_frame = false;
 
@@ -362,9 +369,10 @@ void *elaborateSingleCamera(void *ptr)
         data.mtxF.lock();
         data.frame.copyTo(*frame);
 
-        //std::cout << " Copying in a new iteration" << std::endl;
-
+        // Taking the TimeStamp & FrameCounter from video_capture
         timestamp_acquisition = data.tStampMs;
+        frameCounter = data.frameCounter;
+        
         new_frame = data.frameConsumed;
         data.frameConsumed = true;
         data.mtxF.unlock();
@@ -374,15 +382,25 @@ void *elaborateSingleCamera(void *ptr)
             prof.tock("Copy frame");
             n_frame++;
             
+            std::cout << "\n\nVC Frame:  " << frameCounter << "; CE frame: " << n_frame << " with timestamp: " << timestamp_acquisition <<std::endl;
             std::cout << "\n\nFrame " << n_frame << " being processed..." <<std::endl;
 
             //inference
             prof.tick("Inference");
 
+            std::cout << "\n\nAAAA " <<std::endl;
+
+
             engine.preprocess(*frame);
+
+            std::cout << "\n\nAAAA2 " <<std::endl;
             engine.infer();
+
+            std::cout << "\n\nAAAA3 " <<std::endl;
             const auto boxes = engine.postprocess();
             printf("Number of objects detected: %ld\n", boxes.size());
+
+            std::cout << "\n\nAAAA4 " <<std::endl;
 
             prof.tock("Inference");
 
@@ -395,14 +413,19 @@ void *elaborateSingleCamera(void *ptr)
                 unsigned int message_size;
                 // Send data trough UDP: box_vector.size()
                 // char data[43 * box_vector.size()];
-                char *data = prepareMessageUDP2(boxes, n_frame, cam->id, &message_size);
+                char *payload = prepareMessageUDP2(boxes, &frameCounter, cam->id, &message_size, &timestamp_acquisition);
                 // std::cout << "Press Enter to continue…" << std::endl;
                 // cin.get();
+                std::cout << "\n\nAAAA5 " <<std::endl;
 
-                sendUDPMessage2(sockfd, data, &message_size, clientaddr);
+                sendUDPMessage2(sockfd, payload, &message_size, clientaddr);
+                std::cout << "\n\nAAAA55 " <<std::endl;
+                if (payload != nullptr)
+                    delete payload;
             }
 
-            
+            std::cout << "\n\nAAAA6" <<std::endl;
+
             prof.tock("Prepare message");   
 
             prof.tock("Total time");   
@@ -420,6 +443,7 @@ void *elaborateSingleCamera(void *ptr)
             std::cout << " ELABORATION: " << n_frame  << " processed" << std::endl;
             break;
         }
+        
 
     } // while grun
     gRun = false;

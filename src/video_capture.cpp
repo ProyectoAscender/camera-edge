@@ -81,6 +81,8 @@ void *readVideoCapture( void *ptr )
         data->mtxF.lock();
         data->frame         = frame.clone();
         data->tStampMs      = timestamp_acquisition;
+        data->frameCounter++;                           // Increment the frame counter here
+        std::cout << "\tVC --> Frame count: " << data->frameCounter << std::endl;
         data->frameConsumed = false;
         data->mtxF.unlock();
         prof.tock("Frame copy");
