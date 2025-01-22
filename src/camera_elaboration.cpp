@@ -9,8 +9,10 @@
 
 #include "undistort.h"
 
-//Includes for udp sockets
+// Include ZeroMQ
 #include "zmq.hpp"
+
+//Includes for udp sockets
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <netinet/in.h>
@@ -247,6 +249,9 @@ void *elaborateSingleCamera(void *ptr)
     std::cout<<"\tStarting camera: "<< cam->id << std::endl;
     pthread_t video_cap;
     edge::video_cap_data data;
+
+
+
     data.input          = (char*)cam->input.c_str();
     std::cout<<"\tCamera input: "<< data.input << std::endl;
     data.camId          = cam->id;
@@ -270,8 +275,13 @@ void *elaborateSingleCamera(void *ptr)
     }
 
 
+    // Wait until data.frame has something -> AKA waiting for NX11 to be GStreaming frames.
+    while (data.frame.empty()) {
+        std::cout << "- - - - -> Waiting for NX11" << std::endl;
+        usleep(1000000); // 1 s
+    }
 
-    usleep(3000000);
+
     int sockfd = setupUDPConnection(servaddr, camCommunicatorPort);
     if (sockfd < 0) {
         return (void *)1; // Terminar si no se pudo configurar
@@ -290,6 +300,7 @@ void *elaborateSingleCamera(void *ptr)
     inet_ntop(AF_INET, &clientaddr.sin_addr, client_ip, sizeof(client_ip));
     std::cout << "\n\n[INFO] Solicitud recibida de " << client_ip << ":" << ntohs(clientaddr.sin_port) << std::endl;
 
+
     // Datos a enviar en esta iteración (pueden variar)
     char* camData = new char[bufferSize];
 
@@ -304,14 +315,15 @@ void *elaborateSingleCamera(void *ptr)
 
     unsigned int length = (unsigned int)strlen(camData);
     sendUDPMessage2(sockfd, camData, &length, clientaddr);
-    delete camData;
+
+    // Use delete[] since you allocated an array
+    delete[] camData;
 
 
     std::cout << "- - - - -> CAM INFO SENT\n\n" << std::endl;
     
 
     std::cout<<"\nWAITING FOR SMARTICITY TO BE READY..." << std::endl;
-    usleep(45000000);
 
 
     
@@ -342,7 +354,7 @@ void *elaborateSingleCamera(void *ptr)
                           std::to_string(data.frame.cols)  + "x" +
                           std::to_string(data.frame.rows) + "_" +
                           std::to_string(data.framesToProcess) + "frames.mp4",
-                          cv::VideoWriter::fourcc('M','P','4','V'), 30, cv::Size(data.width, data.height));
+                          cv::VideoWriter::fourcc('M','P','4','V'), 30, cv::Size(data.frame.cols, data.frame.rows));
     }
     
     // Declaring UDP variables
@@ -364,18 +376,19 @@ void *elaborateSingleCamera(void *ptr)
     while(gRun){
         prof.tick("Total time");
         batch_frame.clear();
+
         //copy the frame that the last frame read by the video capture thread
         prof.tick("Copy frame");
         data.mtxF.lock();
         data.frame.copyTo(*frame);
-
         // Taking the TimeStamp & FrameCounter from video_capture
         timestamp_acquisition = data.tStampMs;
         frameCounter = data.frameCounter;
-        
         new_frame = data.frameConsumed;
         data.frameConsumed = true;
         data.mtxF.unlock();
+
+
        
         if(!frame->empty() && !new_frame) {
             batch_frame.push_back(*frame);

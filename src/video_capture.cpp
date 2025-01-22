@@ -31,16 +31,29 @@ void *readVideoCapture( void *ptr )
         gRun = false; 
     }
 
+    // Wait until cap gets a frame -> AKA waiting for NX11 to be GStreaming frames.
+    while (cap.read(data->frame) && data->frame.empty()) {
+        usleep(100000); // Wait for 100 ms before retrying
+    }
+
     // const int new_width     = data->width;
     // const int new_height    = data->height;
     cv::Mat frame; //, resized_frame;
 
     cv::VideoWriter result_video;
     std::ofstream video_timestamp;
+
+
     if (record){
         auto now = std::chrono::system_clock::now();
-        int w = cap.get(cv::CAP_PROP_FRAME_WIDTH);
-        int h = cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+        int w = data->frame.cols;
+        int h = data->frame.rows;
+        
+        // Check if output dir exists, and if not, create it
+        std::string output_dir = "../data/output/";
+        system(("[ -d " + output_dir + " ] || mkdir -p " + output_dir).c_str());
+
+        // Open files to save output
         result_video.open("../data/output/video_cam_" +
                             data->camId+ "_" + 
                             std::to_string(w)+ "_" + 
@@ -49,6 +62,7 @@ void *readVideoCapture( void *ptr )
                             get_timestamp() + ".mp4", 
                            cv::VideoWriter::fourcc('M','P','4','V'), 30, cv::Size(w, h));
         video_timestamp.open ("timestamp_cam_" + data->camId + ".txt");
+
     }
 
     uint64_t timestamp_acquisition = 0;
@@ -67,12 +81,11 @@ void *readVideoCapture( void *ptr )
         cap >> frame; 
         timestamp_acquisition = getTimeMs();
         prof.tock("Frame acquisition");
-        if(frame.empty()){
-            std::cerr<<"frame is empty"<<std::endl;
-        }
+
         if(frame.empty()) {
-            usleep(1000000); //us
+            usleep(1000000); // 1s
             cap.open(data->input);
+            std::cerr<<"frame is empty"<<std::endl;
             printf("cap reinitialize\n");
             continue;
         }         
