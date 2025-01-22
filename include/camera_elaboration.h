@@ -27,7 +27,7 @@ void GPS2pixel(double lat, double lon, int &x, int &y, double* adfGeoTransform);
 
 void printBufferHex(const char* buffer, size_t size);
 
-char* prepareMessageUDP2(const std::vector<Box> &boxes, unsigned int *frameCounter, std::string cam_id, unsigned int *message_size, uint64_t *timestamp_acquisition);
+char* prepareMessage(const std::vector<Box> &boxes, unsigned int *frameCounter, std::string cam_id, unsigned int *message_size, uint64_t *timestamp_acquisition);
 void *elaborateSingleCamera(void *ptr);
 
 #endif /*CAMERAELABORATION_H*/
