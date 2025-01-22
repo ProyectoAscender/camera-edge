@@ -17,7 +17,8 @@
 
 // #define CHAR_BOX_SIZE 14
 // #define CHAR_BOX_SIZE 46
-#define CHAR_BOX_SIZE 58
+// #define CHAR_BOX_SIZE 58
+#define CHAR_BOX_SIZE 64
 
 
 

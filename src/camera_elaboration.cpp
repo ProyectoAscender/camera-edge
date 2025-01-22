@@ -1,156 +1,16 @@
 #include "camera_elaboration.h"
-
 #include <opencv2/imgproc.hpp>
 #include <opencv2/calib3d.hpp>
-
-//#include "tkDNN/utils.h"
-
 #include "Profiler.h"
-
 #include "undistort.h"
 
 // Include ZeroMQ
 #include "zmq.hpp"
 
-//Includes for udp sockets
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <netinet/in.h>
-#include <sys/types.h>
-#include <sys/socket.h>
 
 
 using std::cin;
 
-// void CharToByte(char* char_arr, unsigned char* unsigned_char_arr, unsigned int count){
-//     for(unsigned int i = 0; i < count; i++){
-//         unsigned_char_arr[i]= static_cast<unsigned char>(char_arr[i]);
-//         }
-// }
-
-void sendUDPMessage2(int sockfd, char* data, unsigned int *data_size, sockaddr_in& clientaddr) {
-    // Validar datos de entrada
-    if (data == nullptr || data_size == 0) {
-        std::cerr << "[ERROR] Datos inválidos para enviar." << std::endl;
-        return;
-    }
-
-    // Enviar el mensaje usando sendto
-    ssize_t bytes_sent = sendto(sockfd, data, *data_size, 0, (struct sockaddr*)&clientaddr, sizeof(clientaddr));
-    if (bytes_sent < 0) {
-        perror("[ERROR] Error al enviar el mensaje UDP");
-    } else {
-        std::cout << "[INFO] Mensaje enviado con éxito (" << bytes_sent << " bytes)" << std::endl;
-    }
-}
-
-
-void sendUDPMessage(int sockfd, char* data ){
-
-
-    char clientname[1024] = "";
-    struct sockaddr_in clientaddr = sockaddr_in();
-    socklen_t len = sizeof(clientaddr);
-
-    inet_ntop(AF_INET,&clientaddr.sin_addr,clientname,sizeof(clientname));
-    std::string client_ip_str(clientname);
-
-
-    char buffer_recv[1024];
-    int recv_error = recvfrom(sockfd, buffer_recv, 1024,
-        MSG_WAITALL, ( struct sockaddr *) &clientaddr,
-        &len);
-
-    inet_ntop(AF_INET,&clientaddr.sin_addr,clientname,sizeof(clientname));
-    client_ip_str = std::string(clientname);
-
-    std::cout << "****************-------------Preparing UDP Meesage const:"  <<  (const char *)data <<  std::endl;
-    
-    
-    size_t data_size = strlen((const char *)data);
-    // printBufferHex((const char *)data, data_size);
-   // if (client_ip_str != "0.0.0.0"){
-        sendto(sockfd, (const char *)data, strlen(data),MSG_DONTWAIT, (const struct sockaddr *) &clientaddr,sizeof(clientaddr));
-   // }
-    free(data); 
-}
-
-int setupUDPConnection(sockaddr_in& servaddr, std::string& socketPort) {
-
-    zmq::message_t unimportant_message;
-    zmq::context_t context(1);
-
-    std::cout << "Listdening to tcp://0.0.0.0:" << socketPort << " waiting for COMPSs ack to start" << std::endl;
-    zmq::socket_t *app_socket = new zmq::socket_t(context, ZMQ_REP);
-    app_socket->bind("tcp://0.0.0.0:" + socketPort);
-    app_socket->recv(unimportant_message); // wait for python workflow to ack to start processing frames
-    app_socket->close();
-    delete app_socket;
-
-    std::cout << "Listening to udp in://0.0.0.0:" << socketPort << std::endl;
-
-    // Crear socket UDP
-    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sockfd < 0) {
-        perror("[ERROR] Error al crear el socket");
-        return -1;
-    }
-
-    // Configurar la dirección del emisor (servidor)
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(atoi(socketPort.c_str())); // Puerto para escuchar solicitudes
-    servaddr.sin_addr.s_addr = INADDR_ANY;
-
-    // Asociar el socket a la dirección y puerto
-    if (bind(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0) {
-        perror("[ERROR] Error al hacer bind");
-        close(sockfd);
-        return -1;
-    }
-
-    std::cout << "[INFO] Servidor UDP configurado y esperando solicitudes..." << std::endl;
-    return sockfd;
-}
-
-int openUDPsockets(std::string& socketPort){
-
-    zmq::message_t unimportant_message;
-    zmq::context_t context(1);
-
-    struct sockaddr_in servaddr;
-    int sockfd;
-
-    std::cout << "Listdening to tcp://0.0.0.0:" << socketPort << " waiting for COMPSs ack to start" << std::endl;
-    zmq::socket_t *app_socket = new zmq::socket_t(context, ZMQ_REP);
-    app_socket->bind("tcp://0.0.0.0:" + socketPort);
-    app_socket->recv(unimportant_message); // wait for python workflow to ack to start processing frames
-    app_socket->close();
-    delete app_socket;
-
-    std::cout << "Listening to udp in://0.0.0.0:" << socketPort << std::endl;
-
-    // Creating socket file descriptor
-    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-        perror("socket creation failed");
-        exit(EXIT_FAILURE);
-    }
-
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(atoi(socketPort.c_str())); //socketPort
-    servaddr.sin_addr.s_addr = INADDR_ANY;
-
-    if (bind(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0)
-    {
-        std::cout << "Failed to bind socket! " << strerror(errno) << "\n";
-        return 1;
-    }
-
-    std::cout << socketPort << std::endl;
-    //connect(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr));
-        
-
-    return sockfd;
-}
 
 
 
@@ -187,12 +47,12 @@ char* prepareMessageUDP2( const std::vector<Box> &boxes, unsigned int *frameCoun
 
     for (int i = 0; i < boxes.size(); i++) {
     // for (int i = 0; i < 20; i++) {            // for debugging
-            std::string result;
-            for(int i = 0; i < cam_id.size(); i++) {
-                char buffer[20];
-                sprintf(buffer, "%X ", cam_id[i]);
-                result += buffer;
-            }
+            // std::string result;
+            // for(int i = 0; i < cam_id.size(); i++) {
+            //     char buffer[20];
+            //     sprintf(buffer, "%X ", cam_id[i]);
+            //     result += buffer;
+            // }
 
 
             // std::cout << "hexval1: " << result << std::endl;
@@ -207,20 +67,40 @@ char* prepareMessageUDP2( const std::vector<Box> &boxes, unsigned int *frameCoun
         // std::cout<<"Box : " << i << " - "<< boxes[i].h << std::endl;
 
 
-        size_t size_of_data = snprintf(buffer, CHAR_BOX_SIZE + 1,
-                                        "%02x%02x%02x%02x%02x%04x%016llx%04x%04x%04x%04x%08x%04x",      // With everything
-                                        // "%02x%02x%02x%02x%02x%04x%016llx%04x%04x%04x%04x",                  // For testing
-                                        true,                                               // Flag (boolean, 1 byte, 2 hex digits)
-                                        cam_id[0], cam_id[1], cam_id[2], cam_id[3],         // Camera ID (4 bytes, 4 x 2 hex digits = 8 hex digits)
-                                        *frameCounter,                                      // Frame number (2 bytes, 4 hex digits)
-                                        (unsigned long long)*timestamp_acquisition,         // Timestamp from video_capture (8 bytes, 16 hex digits)
-                                        int(boxes[i].x),                                    // Box x-coordinate (2 bytes, 4 hex digits)
-                                        int(boxes[i].y),                                    // Box y-coordinate (2 bytes, 4 hex digits)
-                                        int(boxes[i].w),                                    // Box width (2 bytes, 4 hex digits)
-                                        int(boxes[i].h),                                    // Box height (2 bytes, 4 hex digits)
-                                        *(unsigned int*)&boxes[i].prob,                     // Probability (4 bytes, 8 hex digits)
-                                        boxes[i].cl                                         // Class (2 bytes, 4 hex digits)
+        // size_t size_of_data = snprintf(buffer, CHAR_BOX_SIZE + 1,
+        //                                 "%02x%02x%02x%02x%02x%04x%016llx%04x%04x%04x%04x%08x%04x",      // With everything
+        //                                 // "%02x%02x%02x%02x%02x%04x%016llx%04x%04x%04x%04x",                  // For testing
+        //                                 true,                                               // Flag (boolean, 1 byte, 2 hex digits)
+        //                                 cam_id[0], cam_id[1], cam_id[2], cam_id[3],         // Camera ID (4 bytes, 4 x 2 hex digits = 8 hex digits)
+        //                                 *frameCounter,                                      // Frame number (2 bytes, 4 hex digits)
+        //                                 (unsigned long long)*timestamp_acquisition,         // Timestamp from video_capture (8 bytes, 16 hex digits)
+        //                                 int(boxes[i].x),                                    // Box x-coordinate (2 bytes, 4 hex digits)
+        //                                 int(boxes[i].y),                                    // Box y-coordinate (2 bytes, 4 hex digits)
+        //                                 int(boxes[i].w),                                    // Box width (2 bytes, 4 hex digits)
+        //                                 int(boxes[i].h),                                    // Box height (2 bytes, 4 hex digits)
+        //                                 *(unsigned int*)&boxes[i].prob,                     // Probability (4 bytes, 8 hex digits)
+        //                                 boxes[i].cl                                         // Class (2 bytes, 4 hex digits)
+        //                             );
+
+
+        size_t size_of_data = snprintf(buffer,
+                                        CHAR_BOX_SIZE + 1,
+                                        "%02x%02x%02x%02x%02x%04x%016llx%04x%04x%04x%04x%08x%04x",
+                                        static_cast<unsigned int>(true),
+                                        static_cast<unsigned int>(static_cast<unsigned char>(cam_id[0])),
+                                        static_cast<unsigned int>(static_cast<unsigned char>(cam_id[1])),
+                                        static_cast<unsigned int>(static_cast<unsigned char>(cam_id[2])),
+                                        static_cast<unsigned int>(static_cast<unsigned char>(cam_id[3])),
+                                        static_cast<unsigned int>(*frameCounter),
+                                        static_cast<unsigned long long>(*timestamp_acquisition),
+                                        static_cast<unsigned int>(boxes[i].x),
+                                        static_cast<unsigned int>(boxes[i].y),
+                                        static_cast<unsigned int>(boxes[i].w),
+                                        static_cast<unsigned int>(boxes[i].h),
+                                        static_cast<unsigned int>(*(unsigned int*)&boxes[i].prob),
+                                        static_cast<unsigned int>(boxes[i].cl)
                                     );
+
 
         buffer += size_of_data ;
 
@@ -245,123 +125,120 @@ char* prepareMessageUDP2( const std::vector<Box> &boxes, unsigned int *frameCoun
 void *elaborateSingleCamera(void *ptr)
 {
     edge::camera* cam = (edge::camera*) ptr;
-    std::cout<<"STARTING CAMERA_ELABORATION..." << std::endl;
-    std::cout<<"\tStarting camera: "<< cam->id << std::endl;
+    std::cout<<"[elaborateSingleCamera] STARTING CAMERA_ELABORATION..." << std::endl;
+    std::cout<<"[elaborateSingleCamera] Starting camera: "<< cam->id << std::endl;
+
+    // Create a thread for video capture
     pthread_t video_cap;
     edge::video_cap_data data;
+    data.input              = (char*)cam->input.c_str();
+    data.camId              = cam->id;
+    data.frameConsumed      = true;
+    data.framesToProcess    = cam->framesToProcess;
+    data.gstreamer          = cam->gstreamer;
+    data.dataPath           = cam->dataPath;
 
-
-
-    data.input          = (char*)cam->input.c_str();
-    std::cout<<"\tCamera input: "<< data.input << std::endl;
-    data.camId          = cam->id;
-    data.frameConsumed  = true;
-    data.framesToProcess = cam->framesToProcess;
-    data.gstreamer      = cam->gstreamer;
-    data.dataPath = cam->dataPath;
-
-    sockaddr_in servaddr = {};
-    sockaddr_in clientaddr = {};
-    socklen_t clientaddr_len = sizeof(clientaddr);
+    // Message variables
     int bufferSize = 70;
 
-    std::string camCommunicatorPort = std::to_string(cam->portCommunicator);
 
-    if (pthread_create(&video_cap, NULL, readVideoCapture, (void *)&data)){
-        fprintf(stderr, "Error creating thread\n");
-        return (void *)1;
-    } else {
-        std::cout<<"\nLAUNCHING VIDEO CAPTURE..." << std::endl;
+    if (pthread_create(&video_cap, NULL, readVideoCapture, (void*)&data)){
+        std::cerr << "[elaborateSingleCamera] Error creating capture thread\n";
+        return (void*)1;
     }
+    std::cout << "[elaborateSingleCamera] Video capture launched.\n";
+
+    // ZeroMQ sockets
+     // We'll do the handshake on port X, and bounding boxes on port X+1
+    int handshakePort = cam->portCommunicator;
+    int pubPort       = cam->portCommunicator + 1;
+    std::string handshakeAddr = "tcp://0.0.0.0:" + std::to_string(handshakePort);
+    std::string pubBindAddr   = "tcp://0.0.0.0:" + std::to_string(pubPort);
+
+    // Create ZeroMQ context
+    zmq::context_t context(1);
+
+
+
+    //=============================
+    // 1) HANDSHAKE (REP)
+    //=============================             This should be in a function
+    zmq::socket_t rep_socket(context, zmq::socket_type::rep);
+    try {
+        rep_socket.bind(handshakeAddr);
+        std::cout << "[elaborateSingleCamera] REP handshake bound at " << handshakeAddr << "\n";
+    } catch (const zmq::error_t& e) {
+        std::cerr << "[elaborateSingleCamera] Error binding REP socket: " << e.what() << std::endl;
+        return (void*)1;
+    }
+
+    // Wait for 1 request from Python, respond with camera info
+    std::cout << "[elaborateSingleCamera] Waiting for handshake request...\n";
+    zmq::message_t request;
+    rep_socket.recv(request, zmq::recv_flags::none);
+    std::cout << "[elaborateSingleCamera] Received handshake request.\n";
 
 
     // Wait until data.frame has something -> AKA waiting for NX11 to be GStreaming frames.
     while (data.frame.empty()) {
-        std::cout << "- - - - -> Waiting for NX11" << std::endl;
+        std::cout << "[elaborateSingleCamera] Waiting for frames from NX11...\n";
         usleep(1000000); // 1 s
     }
 
+    // At this point, camera is streaming frames
+    std::cout << "- - - - -> Camera " << data.camId << " is ready. " << std::endl;
 
-    int sockfd = setupUDPConnection(servaddr, camCommunicatorPort);
-    if (sockfd < 0) {
-        return (void *)1; // Terminar si no se pudo configurar
+    // Build the camera info in your pipe-delimited style
+    // "Sent ZMQ:|cam->id|cam->gstreamer|framesToProcess|height|width|dataPath"
+
+    // Data to send in handshake
+    char infoBuffer[bufferSize];
+    snprintf(infoBuffer, bufferSize, "%s|%s|%d|%d|%d|%d|%s",
+                "Sent  UDP: ",
+                data.camId.c_str(), data.gstreamer, cam->framesToProcess, 
+                data.frame.rows, data.frame.cols, data.dataPath.c_str());
+
+    // Send the camera info back
+    zmq::message_t reply(strlen(infoBuffer));
+    memcpy(reply.data(), infoBuffer, strlen(infoBuffer));
+    rep_socket.send(reply, zmq::send_flags::none);
+    std::cout << "[elaborateSingleCamera] Replied with camera info: " << infoBuffer << "\n";
+
+    // One-time handshake done, close the REP socket
+    rep_socket.close();
+    std::cout << "[elaborateSingleCamera] Handshake done.\n";
+
+
+
+
+    //=============================
+    // 2) PUBLISH bounding boxes (PUB)
+    //=============================
+    zmq::socket_t publisher(context, zmq::socket_type::pub);
+    try {
+        publisher.bind(pubBindAddr);
+        std::cout << "[elaborateSingleCamera] PUB bound at: " << pubBindAddr << std::endl;
+    } catch (const zmq::error_t& e) {
+        std::cerr << "[elaborateSingleCamera] Error binding PUB socket: " << e.what() << std::endl;
+        return (void*)1;
     }
 
-    char buffer_recv[1024];
-    ssize_t bytes_received = recvfrom(sockfd, buffer_recv, sizeof(buffer_recv), 0,
-                                        (struct sockaddr*)&clientaddr, &clientaddr_len);
-
-    if (bytes_received < 0) {
-        perror("[ERROR] Error al recibir datos");
-    }
-
-    // Obtener IP del cliente
-    char client_ip[INET_ADDRSTRLEN] = {0};
-    inet_ntop(AF_INET, &clientaddr.sin_addr, client_ip, sizeof(client_ip));
-    std::cout << "\n\n[INFO] Solicitud recibida de " << client_ip << ":" << ntohs(clientaddr.sin_port) << std::endl;
 
 
-    // Datos a enviar en esta iteración (pueden variar)
-    char* camData = new char[bufferSize];
+    // YOLO init
+    YoloV6Engine engine("../yolov6_agx13.engine", data.frame.cols, data.frame.rows, 0.5);
 
-    std::cout << "- - - - -> SENDING CAM INFO :::: "<< data.camId << std::endl;
-    size_t size_of_data = snprintf(camData, bufferSize, "%s|%s|%d|%d|%d|%d|%s",
-                                    "Sent  UDP: ",
-                                    data.camId.c_str(), data.gstreamer, cam->framesToProcess, 
-                                    data.frame.rows, data.frame.cols, data.dataPath.c_str());
-    std::cout << "- - - - -> SENDING CAM INFO  " << camData << std::endl;
-    std::cout << "- - - - -> CAM INFO SIZE  " << strlen(camData) << std::endl;
-    // sendUDPMessage2(sockfd, camData, strlen(camData), clientaddr);
-
-    unsigned int length = (unsigned int)strlen(camData);
-    sendUDPMessage2(sockfd, camData, &length, clientaddr);
-
-    // Use delete[] since you allocated an array
-    delete[] camData;
-
-
-    std::cout << "- - - - -> CAM INFO SENT\n\n" << std::endl;
-    
-
-    std::cout<<"\nWAITING FOR SMARTICITY TO BE READY..." << std::endl;
-
-
-    
-    std::vector<cv::Mat> batch_frame;
-    // std::vector<cv::Mat> dnn_input;
-    cv::Mat distort;
-    uint64_t timestamp_acquisition = 0;
-    unsigned int frameCounter = 0;
-    cv::Mat map1, map2;
-
-    // std::vector<tk::dnn::box>       detected;
-
+    // Initialize stuff for saving video with boxes
     cv::VideoWriter boxes_video;
-    double north, east;
-    bool first_iteration = true; 
-    bool new_frame = false;
-
-    int pixel_prec_x, pixel_prec_y;
-    uint8_t *d_input, *d_output; 
-    float *d_map1, *d_map2;
-
-    //profiling
-    edge::Profiler prof(cam->id);
-    
     if (recordBoxes){
         boxes_video.open("../data/output/boxes_cam" +
                           data.camId  + "_" + 
                           std::to_string(data.frame.cols)  + "x" +
                           std::to_string(data.frame.rows) + "_" +
                           std::to_string(data.framesToProcess) + "frames.mp4",
-                          cv::VideoWriter::fourcc('M','P','4','V'), 30, cv::Size(data.frame.cols, data.frame.rows));
+                          cv::VideoWriter::fourcc('M','P','4','V'), 30,
+                          cv::Size(data.frame.cols, data.frame.rows));
     }
-    
-    // Declaring UDP variables
-    YoloV6Engine engine("../yolov6_agx13.engine", data.frame.cols, data.frame.rows, 0.5);
-    
-    unsigned int n_frame=0;
-
 
 
     // Pinned memory allocation
@@ -371,107 +248,138 @@ void *elaborateSingleCamera(void *ptr)
                             cudaHostAllocPortable | cudaHostAllocMapped | cudaHostAllocWriteCombined));
     cv::Mat *frame = new cv::Mat(data.frame.rows, data.frame.cols, CV_8UC3, pHost);
 
+    // Launch Profiler
+    edge::Profiler prof(cam->id);
+
+    // Start frame counter (only for this file, not shared)
+    unsigned int n_frame=0;
 
 
+
+    // MAIN LOOP
     while(gRun){
         prof.tick("Total time");
-        batch_frame.clear();
 
-        //copy the frame that the last frame read by the video capture thread
+        // Copy the last frame from the capture thread
         prof.tick("Copy frame");
         data.mtxF.lock();
         data.frame.copyTo(*frame);
-        // Taking the TimeStamp & FrameCounter from video_capture
-        timestamp_acquisition = data.tStampMs;
-        frameCounter = data.frameCounter;
-        new_frame = data.frameConsumed;
+        uint64_t timestamp_acquisition = data.tStampMs;
+        unsigned int frameCounter = data.frameCounter;
+        bool new_frame = data.frameConsumed;
         data.frameConsumed = true;
         data.mtxF.unlock();
+        prof.tock("Copy frame");
 
-
-       
+       // If there's a new frame, run inference
         if(!frame->empty() && !new_frame) {
-            batch_frame.push_back(*frame);
-            prof.tock("Copy frame");
             n_frame++;
             
             std::cout << "\n\nVC Frame:  " << frameCounter << "; CE frame: " << n_frame << " with timestamp: " << timestamp_acquisition <<std::endl;
-            std::cout << "\n\nFrame " << n_frame << " being processed..." <<std::endl;
 
-            //inference
+            // YOLO inference
             prof.tick("Inference");
 
-            std::cout << "\n\nAAAA " <<std::endl;
-
+            // std::cout << "\n\nAAAA " <<std::endl;
 
             engine.preprocess(*frame);
 
-            std::cout << "\n\nAAAA2 " <<std::endl;
+            // std::cout << "\n\nAAAA2 " <<std::endl;
             engine.infer();
 
-            std::cout << "\n\nAAAA3 " <<std::endl;
+            // std::cout << "\n\nAAAA3 " <<std::endl;
             const auto boxes = engine.postprocess();
-            printf("Number of objects detected: %ld\n", boxes.size());
+            std::cout << "Number of objects detected: " << boxes.size() << std::endl;
 
-            std::cout << "\n\nAAAA4 " <<std::endl;
+            // std::cout << "\n\nAAAA4 " <<std::endl;
 
             prof.tock("Inference");
 
-            if (recordBoxes) boxes_video << *frame;
 
-
-            prof.tick("Prepare message"); 
-
-            if (use_udp_socket){
-                unsigned int message_size;
-                // Send data trough UDP: box_vector.size()
-                // char data[43 * box_vector.size()];
-                char *payload = prepareMessageUDP2(boxes, &frameCounter, cam->id, &message_size, &timestamp_acquisition);
-                // std::cout << "Press Enter to continue…" << std::endl;
-                // cin.get();
-                std::cout << "\n\nAAAA5 " <<std::endl;
-
-                sendUDPMessage2(sockfd, payload, &message_size, clientaddr);
-                std::cout << "\n\nAAAA55 " <<std::endl;
-                if (payload != nullptr)
-                    delete payload;
+            // Save frame with boxes To Do
+            if (recordBoxes) {
+                boxes_video << *frame;
             }
+
+
+            // Debugg stuff
+            if(data.frame.rows!= 720 || data.frame.cols != 1280){
+                std::cout << "\n\nIMAGE RESOLUTION CHANGED FOR SOME REASON " <<std::endl;
+                std::cout << "Frame size mismatch: rows = " << data.frame.rows
+                    << ", cols = " << data.frame.cols
+                    << " (expected 1280x720)" << std::endl;
+                usleep(60000000); // 60 s
+            }
+
+
+
+            // Build the same ASCII hex data
+            prof.tick("Prepare message"); 
+            unsigned int message_size;
+            char* payload = prepareMessageUDP2(boxes, &frameCounter, cam->id, &message_size, &timestamp_acquisition);
+            prof.tock("Prepare message");
+
+            // Publish over ZeroMQ: topic = cam->id, payload = ASCII-hex
+            zmq::message_t topic_msg(cam->id.begin(), cam->id.end());
+            zmq::message_t data_msg(payload, message_size);
+
+            // We send a two-part message: [topic, payload]
+            try {
+                publisher.send(topic_msg, zmq::send_flags::sndmore);
+                publisher.send(data_msg, zmq::send_flags::none);
+            } catch(const zmq::error_t& e) {
+                std::cerr << "[elaborateSingleCamera] Publish error: " << e.what() << std::endl;
+            }
+            
+
+
+            // Attempt at handling core dumped
+            if(payload) delete[] payload;
+
+
+            prof.tock("Total time");
+
 
             std::cout << "\n\nAAAA6" <<std::endl;
 
-            prof.tock("Prepare message");   
-
-            prof.tock("Total time");   
+               
             if (verbose) 
                 prof.printStats();  
 
-        } // if -> image empty
-        else 
-            usleep(500);
 
-        // Cleaning vars to UDP
-        // box_vector.clear();
-        
-        if (n_frame >= data.framesToProcess ) {
-            std::cout << " ELABORATION: " << n_frame  << " processed" << std::endl;
-            break;
+
+        } // if -> image empty
+        else {
+            // no new frame
+            usleep(500);
         }
         
 
-    } // while grun
+        if (n_frame >= data.framesToProcess ) {
+            std::cout << "[elaborateSingleCamera] " << data.camId
+                      << " done after " << n_frame << " frames.\n";
+            break;
+        }
+    }
+
+
+
     gRun = false;
-    std::cout << " ELABORATION ended !!!!! Releasing boxes video" << std::endl;
-    if (recordBoxes) boxes_video.release();
+    std::cout << "[elaborateSingleCamera] Elaboration ended for cam " << cam->id << ".\n";
+
+    if (recordBoxes) {
+        boxes_video.release();
+    }
+
     pthread_join( video_cap, NULL);
 
-    checkCuda( cudaFree(d_input));
-    checkCuda( cudaFree(d_output));
-    checkCuda( cudaFree(d_map1));
-    checkCuda( cudaFree(d_map2));
-    checkCuda(cudaFreeHost(pHost));
+    checkCuda( cudaFreeHost(pHost));
+
     delete frame;
 
-    if(use_udp_socket) close(sockfd);
+    // Close ZeroMQ
+    publisher.close();
+    context.close();
 
     return (void *)0;
 }

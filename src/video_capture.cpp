@@ -71,6 +71,7 @@ void *readVideoCapture( void *ptr )
     std::cout << "\n\nSTARTING VIDEO PROCESSING..." << std::endl;
 
     while(gRun) {
+
         if(!data->frameConsumed) {
             // std::cout<<" -> Sleeping. Frame consumed = " << data->frameConsumed << std::endl;
             usleep(500);
@@ -86,7 +87,6 @@ void *readVideoCapture( void *ptr )
             usleep(1000000); // 1s
             cap.open(data->input);
             std::cerr<<"frame is empty"<<std::endl;
-            printf("cap reinitialize\n");
             continue;
         }         
 
