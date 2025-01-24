@@ -126,7 +126,7 @@ char* prepareMessage( const std::vector<Box> &boxes, unsigned int *frameCounter,
     return buffer_origin;
 }
 
-void *elaborateSingleCamera(void *ptr)
+void *elaborateSingleCamera_ZMQ(void *ptr)
 {
     edge::camera* cam = (edge::camera*) ptr;
     std::cout<<"[elaborateSingleCamera] STARTING CAMERA_ELABORATION..." << std::endl;
@@ -258,18 +258,14 @@ void *elaborateSingleCamera(void *ptr)
             // YOLO inference
             prof.tick("Inference");
 
-            // std::cout << "\n\nAAAA " <<std::endl;
 
             engine.preprocess(*frame);
 
-            // std::cout << "\n\nAAAA2 " <<std::endl;
             engine.infer();
 
-            // std::cout << "\n\nAAAA3 " <<std::endl;
             const auto boxes = engine.postprocess();
             std::cout << "Number of objects detected: " << boxes.size() << std::endl;
 
-            // std::cout << "\n\nAAAA4 " <<std::endl;
 
             prof.tock("Inference");
 
@@ -298,9 +294,6 @@ void *elaborateSingleCamera(void *ptr)
 
 
             prof.tock("Total time");
-
-
-            std::cout << "\n\nAAAA6" <<std::endl;
 
                
             if (verbose) 
