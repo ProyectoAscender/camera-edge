@@ -82,7 +82,7 @@ FetchContent_Declare(trt-detect SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/trt-detect
 FetchContent_MakeAvailable(trt-detect)
 
 target_include_directories(class-edge PUBLIC ${OPENCV_INCLUDE_DIRS})
-target_link_libraries(class-edge PUBLIC ${class-edge-LIBS} debug trt-detect)
+target_link_libraries(class-edge PUBLIC ${class-edge-LIBS} trt-detect)
 
 #-------------------------------------------------------------------------------
 # Build executables
