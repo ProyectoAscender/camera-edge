@@ -384,6 +384,13 @@ void *elaborateSingleCamera_UDP(void *ptr)
     // Start frame counter (only for this file, not shared)
     unsigned int n_frame=0;
 
+    // print frame id and time stamp in the frames
+    int fontFace = cv::FONT_HERSHEY_SIMPLEX;
+    double fontScale = 1.0;
+    int thickness = 2;
+    int baseline = 0;
+    cv::Scalar textColor(0, 255, 0); // Green text
+
 
 
     // MAIN LOOP
@@ -420,6 +427,7 @@ void *elaborateSingleCamera_UDP(void *ptr)
             //=============================
             // 2) Send bounding boxes (UDP)
             //=============================
+            // usleep(100 * 1000); // 1s delay
             sendBoundingBoxes(udpSock, clientAddr, clientLen, boxes, frameCounter, cam->id, timestamp_acquisition, prof);
 
 
@@ -428,6 +436,12 @@ void *elaborateSingleCamera_UDP(void *ptr)
 
 
             if (recordBoxes){
+                // **Add frame ID overlay**
+                std::string frameText = "Frame: " + std::to_string(frameCounter) + "TS: " + std::to_string(timestamp_acquisition);
+                cv::Size textSize = cv::getTextSize(frameText, fontFace, fontScale, thickness, &baseline);
+                cv::Point textOrg(frame->cols - textSize.width - 10, frame->rows - 10);
+                cv::putText(*frame, frameText, textOrg, fontFace, fontScale, textColor, thickness);
+
                 // Gstream the frame to SmartCity
                 if (gstreamVideoWriter.isOpened()) {
                     gstreamVideoWriter.write(*frame);

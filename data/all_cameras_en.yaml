@@ -9,7 +9,7 @@ cameras:
     dataPath: !<!> /root/b2drop/barcelona/idelfons/
     pmatrix: !<!> /root/b2drop/barcelona/idelfons/pmat/projMat0001_4pts_centro_utm_ACTIVE.txt
     cameraCalib: !<!> ../data/calib_cameras/0001.params
-    framesToProcess: 500
+    framesToProcess: 5000
     portCommunicator: 8883
     encrypted: 0
     maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg
