@@ -2,7 +2,6 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/calib3d.hpp>
 #include "Profiler.h"
-#include "undistort.h"
 
 // Include ZeroMQ
 #include "zmq.hpp"
@@ -74,6 +73,7 @@ void publishBoundingBoxes(zmq::socket_t &publisher, const std::vector<Box> &boxe
     char* payload = prepareMessage(boxes, &frameCounter, camId, &message_size, &timestampAcquisition);
     prof.tock("Prepare message");
 
+    prof.tick("Publish message");
     // Publish over ZeroMQ: topic = cam->id, payload = ASCII-hex
     zmq::message_t topic_msg(camId.begin(), camId.end());
     zmq::message_t data_msg(payload, message_size);
@@ -88,6 +88,8 @@ void publishBoundingBoxes(zmq::socket_t &publisher, const std::vector<Box> &boxe
 
     // Memory cleaning
     if (payload) delete[] payload;
+
+    prof.tock("Publish message");
 }
 
 
@@ -129,7 +131,7 @@ char* prepareMessage( const std::vector<Box> &boxes, unsigned int *frameCounter,
 void *elaborateSingleCamera_ZMQ(void *ptr)
 {
     edge::camera* cam = (edge::camera*) ptr;
-    std::cout<<"[elaborateSingleCamera] STARTING CAMERA_ELABORATION..." << std::endl;
+    std::cout<<"[elaborateSingleCamera] STARTING CAMERA_ELABORATION_ZMQ..." << std::endl;
     std::cout<<"[elaborateSingleCamera] Starting camera: "<< cam->id << std::endl;
 
     // Create a thread for video capture

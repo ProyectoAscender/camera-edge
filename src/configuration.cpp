@@ -1,5 +1,6 @@
 #include "configuration.h"
 #include "utils.h"
+#include <unistd.h>
 
 std::string executeCommandAndGetOutput(const char *command)
 {

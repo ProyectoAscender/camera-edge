@@ -8,9 +8,6 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include <gdal/gdal.h>
-#include <gdal_priv.h>
-
 
 //#include "tkDNN/utils.h"
 //#include "tkDNN/CenternetDetection.h"

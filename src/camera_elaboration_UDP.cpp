@@ -2,7 +2,6 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/calib3d.hpp>
 #include "Profiler.h"
-#include "undistort.h"
 
 // Include UDP
 #include <sys/socket.h>     // For UDP
@@ -47,9 +46,12 @@ int setupUDPHandshake(sockaddr_in &clientAddr, edge::video_cap_data &data, int &
  * 
  * This function performs the following steps:
  * 1. Creates a UDP socket and binds it to the specified handshake port.
- * 2. Waits for a handshake message from the Python client and sends an acknowledgment ("ACK") back.
- * 3. Polls the camera data to ensure that frames are being streamed by the NX11 camera. If this is not available, it waits for NX11
- * 4. Sends camera configuration and information (e.g., resolution, gstreamer flag, and data path) back to the Python client.
+ * 2. Waits for a handshake message ("REQ") from the Python client.
+ * 3. If the camera is not ready, responds with "NOTREADY" and waits.
+ * 4. If the camera is ready:
+ *    - Sends "READY" to signal readiness.
+ *    - Sends camera configuration (resolution, gstreamer flag, data path).
+ *    - Waits for an "ACK" from the Python client before finalizing.
  * 
  * @param clientAddr Reference to a sockaddr_in structure to store the Python client's address after the handshake.
  * @param data Reference to a `video_cap_data` structure containing camera configuration and frame data.
@@ -83,59 +85,85 @@ int setupUDPHandshake(sockaddr_in &clientAddr, edge::video_cap_data &data, int &
         close(udpSock);
         return -1;
     }
-
-    socklen_t clientLen = sizeof(clientAddr);
     std::cout << "[camera_elaboration_UDP] Waiting for Python handshake on port " << handshakePort << "...\n";
 
-    // Wait for an empty handshake message from Python
-    char buffer[128];
-    ssize_t rcv = recvfrom(udpSock, buffer, sizeof(buffer), 0, (struct sockaddr*)&clientAddr, &clientLen);
-    if (rcv < 0) {
-        perror("[camera_elaboration_UDP] Error receiving handshake");
-        return -1;
+
+
+    // Handshake main loop, coordinating camera, camera edge and smart-city
+    while(true){
+
+        // Receive a handshake request (REQ)
+        char buffer[128];
+        socklen_t clientLen = sizeof(clientAddr);
+        ssize_t rcv = recvfrom(udpSock, buffer, sizeof(buffer), 0, (struct sockaddr*)&clientAddr, &clientLen);
+        if (rcv < 0) {
+            perror("[camera_elaboration_UDP] Error receiving handshake");
+            close(udpSock);
+            return -1;
+        }
+        buffer[rcv] = '\0';  // Null-terminate the received message
+        std::string request(buffer);
+        std::cout << "[camera_elaboration_UDP] Received handshake request: " << request << "\n";
+
+
+        // Ceck if camera (NX11) is ready
+        if (data.frame.empty()) {
+            // Camera not ready yet: respond "NOTREADY"
+            const char* notReadyMsg = "NOTREADY";
+            sendto(udpSock, notReadyMsg, strlen(notReadyMsg), 0, (struct sockaddr*)&clientAddr, clientLen);
+            std::cout << "[camera_elaboration_UDP] Sent NOTREADY --> Continue Waiting for NX11...\n";
+            usleep(1000 * 1000); // 1s delay
+
+        } else {
+            // Camera is ready
+            
+            // send "READY" first
+            const char* readyMsg = "READY";
+            sendto(udpSock, readyMsg, strlen(readyMsg), 0, (struct sockaddr*)&clientAddr, clientLen);
+            std::cout << "[camera_elaboration_UDP] Sent READY to client.\n";
+
+            // Wait for a small delay to ensure the client processes the "READY"
+            usleep(500 * 1000); // 500ms delay
+
+            // Send camera information
+            char infoBuffer[bufferSize];
+            snprintf(infoBuffer, bufferSize, "%s|%s|%d|%d|%d|%d|%s",
+                        "Sent  UDP: ",
+                        data.camId.c_str(), data.gstreamer, data.framesToProcess, 
+                        data.frame.rows, data.frame.cols, data.dataPath.c_str());
+            // Send the camera info back to Python
+            ssize_t sent = sendto(udpSock, infoBuffer, strlen(infoBuffer), 0, (struct sockaddr*)&clientAddr, clientLen);
+            if (sent < 0) {
+                perror("[camera_elaboration_UDP] Error sending camera info to Python");
+                close(udpSock);
+                return -1;
+            }
+            std::cout << "[camera_elaboration_UDP] Sent camera info: " << infoBuffer << "\n";
+
+
+
+            // Wait for an ACK from the client              -->             THIS IS NOT NECESSARY, BUT USEFUL FOR DEBUGGING
+            char ackBuffer[128];
+            ssize_t ackReceived = recvfrom(udpSock, ackBuffer, sizeof(ackBuffer) - 1, 0, (struct sockaddr*)&clientAddr, &clientLen);
+            if (ackReceived < 0) {
+                perror("[camera_elaboration_UDP] Error receiving ACK");
+                close(udpSock);
+                return -1;
+            }
+            ackBuffer[ackReceived] = '\0';
+            std::string ackResponse(ackBuffer);
+            
+            if (ackResponse == "ACK") {
+                std::cout << "[camera_elaboration_UDP] ACK received. Handshake completed successfully.\n";
+                return 0; // Handshake successful
+            } else {
+                std::cout << "[camera_elaboration_UDP] Unexpected response: " << ackResponse << "\n";
+            }
+        }
     }
-    std::cout << "[camera_elaboration_UDP] Received handshake from Python.\n";
 
-
-    // Acknowledge handshake
-    const char* ack = "ACK";
-    ssize_t sent_ack = sendto(udpSock, ack, strlen(ack), 0, (struct sockaddr*)&clientAddr, clientLen);
-    if (sent_ack < 0) {
-        perror("[camera_elaboration_UDP] Error sending ACK to Python");
-        return -1;
-    }
-    std::cout << "[camera_elaboration_UDP] Sent ACK to Python.\n";
-
-
-
-    // Wait until data.frame has something -> AKA waiting for NX11 to be GStreaming frames.
-    while (data.frame.empty()) {
-        std::cout << "[camera_elaboration_UDP] Waiting for frames from NX11...\n";
-        usleep(1000000); // 1 s
-    }
-
-    // At this point, camera is streaming frames
-    std::cout << "- - - - -> Camera " << data.camId << " is ready. " << std::endl;
-
-
-
-    // Data to send in handshake
-    char infoBuffer[bufferSize];
-    snprintf(infoBuffer, bufferSize, "%s|%s|%d|%d|%d|%d|%s",
-                "Sent  UDP: ",
-                data.camId.c_str(), data.gstreamer, data.framesToProcess, 
-                data.frame.rows, data.frame.cols, data.dataPath.c_str());
-
-
-    // Send the camera info back to Python
-    ssize_t sent = sendto(udpSock, infoBuffer, strlen(infoBuffer), 0,
-                          (struct sockaddr*)&clientAddr, clientLen);
-    if (sent < 0) {
-        perror("[camera_elaboration_UDP] Error sending camera info to Python");
-        return -1;
-    }
-    std::cout << "[camera_elaboration_UDP] Sent camera info: " << infoBuffer << "\n";
-    return 0;
+    close(udpSock);
+    return -1; // Should never reach here
 }
 
 
@@ -168,6 +196,8 @@ void sendBoundingBoxes(int udpSock, sockaddr_in &clientAddr, socklen_t clientLen
     char* payload = prepareMessage(boxes, &frameCounter, camId, &message_size, &timestampAcquisition);
     prof.tock("Prepare message");
 
+
+    prof.tick("Publish message");
     // Send the bounding boxes over UDP
     if (message_size > 0) {
         ssize_t sent = sendto(udpSock, payload, message_size, 0,
@@ -177,6 +207,8 @@ void sendBoundingBoxes(int udpSock, sockaddr_in &clientAddr, socklen_t clientLen
         }
     }
     delete[] payload;
+
+    prof.tock("Publish message");
 }
 
 
@@ -299,25 +331,52 @@ void *elaborateSingleCamera_UDP(void *ptr)
     // YOLO init
     YoloV6Engine engine("../yolov6_agx13.engine", data.frame.cols, data.frame.rows, 0.5);
 
-    // Initialize stuff for saving video with boxes
-    cv::VideoWriter boxes_video;
-    if (recordBoxes){
-        boxes_video.open("../data/output/boxes_cam" +
-                          data.camId  + "_" + 
-                          std::to_string(data.frame.cols)  + "x" +
-                          std::to_string(data.frame.rows) + "_" +
-                          std::to_string(data.framesToProcess) + "frames.mp4",
-                          cv::VideoWriter::fourcc('M','P','4','V'), 30,
-                          cv::Size(data.frame.cols, data.frame.rows));
-    }
-
-
     // Pinned memory allocation
     void* pHost;
     checkCuda(cudaHostAlloc(&pHost,
                             data.frame.cols * data.frame.rows * 3,
                             cudaHostAllocPortable | cudaHostAllocMapped | cudaHostAllocWriteCombined));
     cv::Mat *frame = new cv::Mat(data.frame.rows, data.frame.cols, CV_8UC3, pHost);
+
+
+
+    // Gstreamer Pipeline to send processed frames to SmartCity
+    cv::VideoWriter gstreamVideoWriter;
+
+    // We'll do it after we've locked down 'frame' size
+    int w = data.frame.cols;
+    int h = data.frame.rows;
+    double fps = 30.0; // TO DO this needs to be dynamic
+
+    if (recordBoxes) {
+        // For example, if agx12 is at 192.168.1.12
+        std::string pipeline =
+                "appsrc ! videoconvert ! video/x-raw,format=NV12 ! nvvidconv ! video/x-raw(memory:NVMM),format=NV12 "
+                " ! nvv4l2h264enc insert-sps-pps=true bitrate=4000000 ! h264parse ! rtph264pay config-interval=1 "
+                " ! udpsink host=239.255.12.42 port=5001 auto-multicast=true";
+
+        // // To save the video in a video file
+        // std::string pipeline = 
+        //     "appsrc ! videoconvert ! "
+        //     "x264enc tune=zerolatency speed-preset=ultrafast bitrate=2000 ! "
+        //     "mp4mux ! filesink location=output_gstream.mp4";
+
+        // Open the pipeline
+        bool opened = gstreamVideoWriter.open(
+            pipeline,
+            cv::CAP_GSTREAMER,
+            0,       // ignored by GStreamer in "appsrc" mode
+            fps,
+            cv::Size(w, h), 
+            true     // isColor
+        );
+        
+        if (!opened) {
+            std::cerr << "[camera_elaboration_UDP] Could not open output GStreamer pipeline.\n";
+            // set useGstOutput = false or handle error
+        }
+    }
+
 
     // Launch Profiler
     edge::Profiler prof(cam->id);
@@ -329,6 +388,7 @@ void *elaborateSingleCamera_UDP(void *ptr)
 
     // MAIN LOOP
     while(gRun){
+        
         prof.tick("Total time");
 
         // Copy the last frame from the capture thread
@@ -357,32 +417,23 @@ void *elaborateSingleCamera_UDP(void *ptr)
             prof.tock("Inference");
 
 
-            // Save frame with boxes To Do
-            if (recordBoxes) {
-                boxes_video << *frame;
-            }
-
-
-            // Debugg stuff
-            if(data.frame.rows!= 720 || data.frame.cols != 1280){
-                std::cout << "\n\nIMAGE RESOLUTION CHANGED FOR SOME REASON " <<std::endl;
-                std::cout << "Frame size mismatch: rows = " << data.frame.rows
-                    << ", cols = " << data.frame.cols
-                    << " (expected 1280x720)" << std::endl;
-                usleep(60000000); // 60 s
-            }
-
             //=============================
             // 2) Send bounding boxes (UDP)
             //=============================
-
             sendBoundingBoxes(udpSock, clientAddr, clientLen, boxes, frameCounter, cam->id, timestamp_acquisition, prof);
-
 
 
             prof.tock("Total time");
 
-               
+
+
+            if (recordBoxes){
+                // Gstream the frame to SmartCity
+                if (gstreamVideoWriter.isOpened()) {
+                    gstreamVideoWriter.write(*frame);
+                }
+            }
+
             if (verbose) 
                 prof.printStats();  
 
@@ -407,9 +458,7 @@ void *elaborateSingleCamera_UDP(void *ptr)
     gRun = false;
     std::cout << "[camera_elaboration_UDP] Elaboration ended for cam " << cam->id << ".\n";
 
-    if (recordBoxes) {
-        boxes_video.release();
-    }
+
 
     pthread_join( video_cap, NULL);
 

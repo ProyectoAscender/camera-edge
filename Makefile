@@ -11,20 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+ROOT_IMAGE=nvcr.io/nvidia/l4t-tensorrt
+TAG=r8.5.2.2-devel
+BUILDER=${ROOT_IMAGE}:${TAG}
+PREFIX=registry.gitlab.bsc.es/ppc/benchmarks/smart-city/
+IMAGE=camera-edge
 
-TAG = r32.5.0
-PREFIX = registry.gitlab.bsc.es/ppc-bsc/software/camera-edge/
-PREFIX2 = bscppc/
-IMAGE = camera-edge
-
-all: push
+all: image
 
 image:
-	docker build . -f Dockerfile.arm64 -t $(PREFIX)$(IMAGE):$(TAG)
-	docker image tag $(PREFIX)$(IMAGE):$(TAG) $(PREFIX2)$(IMAGE):$(TAG)
+	# Ensure this is a tab, not spaces
+	docker build . -f docker/l4t-trt/Dockerfile --build-arg ROOT_CONTAINER=$(BUILDER) -t $(PREFIX)$(IMAGE):$(TAG) --progress=plain
 
-push: image
-	docker push $(PREFIX2)$(IMAGE):$(TAG)
-# docker push $(PREFIX)$(IMAGE):$(TAG)
+# push: image
+# 	# Ensure this is a tab, not spaces
+# 	docker push $(PREFIX)$(IMAGE):$(TAG)
 
 clean:
+	# Optional clean commands can go here
+

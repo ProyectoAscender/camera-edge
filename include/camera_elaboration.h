@@ -8,7 +8,6 @@
 
 
 #include"video_capture.h"
-#include"message.h"
 #include "YoloV6Engine.hpp"
 
 
@@ -38,6 +37,7 @@ char* prepareMessage(const std::vector<Box> &boxes, unsigned int *frameCounter, 
 #else
     void *elaborateSingleCamera_UDP(void *ptr);
     #define elaborateSingleCamera elaborateSingleCamera_UDP
+    
 #endif
 
 

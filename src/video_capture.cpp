@@ -2,6 +2,7 @@
 #include <sstream>
 #include <string>
 #include <ctime>
+#include <unistd.h>
 
 std::string get_timestamp()
 {
@@ -80,7 +81,13 @@ void *readVideoCapture( void *ptr )
         // std::cout<<"\nVC-> Frame acquisition\n" << std::endl;
         prof.tick("Frame acquisition");
         cap >> frame; 
-        timestamp_acquisition = getTimeMs();
+
+        // Timestamp from the Gstreamer
+        double pts_msec = cap.get(cv::CAP_PROP_POS_MSEC);
+
+        // Convert milliseconds to microseconds and safely cast to uint64_t
+        uint64_t pts_usec = static_cast<uint64_t>(std::round(pts_msec * 1000));
+
         prof.tock("Frame acquisition");
 
         if(frame.empty()) {
@@ -93,7 +100,7 @@ void *readVideoCapture( void *ptr )
         prof.tick("Frame copy");
         data->mtxF.lock();
         data->frame         = frame.clone();
-        data->tStampMs      = timestamp_acquisition;
+        data->tStampMs      = pts_usec;
         data->frameCounter++;                           // Increment the frame counter here
         // std::cout << "\tVC --> Frame count: " << data->frameCounter << std::endl;
         data->frameConsumed = false;
