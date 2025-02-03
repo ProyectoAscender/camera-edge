@@ -352,7 +352,8 @@ void *elaborateSingleCamera_UDP(void *ptr)
         // For example, if agx12 is at 192.168.1.12
         std::string pipeline =
                 "appsrc ! videoconvert ! video/x-raw,format=NV12 ! nvvidconv ! video/x-raw(memory:NVMM),format=NV12 "
-                " ! nvv4l2h264enc insert-sps-pps=true bitrate=4000000 ! h264parse ! rtph264pay config-interval=1 "
+                " ! nvv4l2h264enc insert-sps-pps=true iframeinterval=5 idrinterval=5 control-rate=1 bitrate=8000000 "
+                " ! h264parse ! rtph264pay config-interval=1 "
                 " ! udpsink host=239.255.12.42 port=5001 auto-multicast=true";
 
         // // To save the video in a video file
@@ -427,7 +428,6 @@ void *elaborateSingleCamera_UDP(void *ptr)
             //=============================
             // 2) Send bounding boxes (UDP)
             //=============================
-            // usleep(100 * 1000); // 1s delay
             sendBoundingBoxes(udpSock, clientAddr, clientLen, boxes, frameCounter, cam->id, timestamp_acquisition, prof);
 
 
