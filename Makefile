@@ -21,7 +21,7 @@ all: image
 
 image:
 	# Ensure this is a tab, not spaces
-	docker build . -f docker/l4t-trt/Dockerfile --build-arg ROOT_CONTAINER=$(BUILDER) -t $(PREFIX)$(IMAGE):$(TAG) --progress=plain
+	DOCKER_BUILDKIT=0 docker build . -f docker/l4t-trt/Dockerfile --build-arg ROOT_CONTAINER=$(BUILDER) -t $(PREFIX)$(IMAGE):$(TAG)
 
 # push: image
 # 	# Ensure this is a tab, not spaces

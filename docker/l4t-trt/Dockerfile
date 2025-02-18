@@ -7,11 +7,10 @@ RUN apt install -y apt-utils wget && apt install -y --reinstall ca-certificates 
     cd cmake-3.22.1 && \
     ./bootstrap && make -j4 && make install
 RUN cmake --version
-RUN apt-get install -y python3-matplotlib python-dev libgdal-dev libcereal-dev python-numpy
-RUN apt-get install -y libgles2-mesa-dev xorg-dev libglu1-mesa-dev
+# RUN apt-get install -y python3-matplotlib python-dev libgdal-dev libcereal-dev python-numpy
+# RUN apt-get install -y libgles2-mesa-dev xorg-dev libglu1-mesa-dev
 RUN mkdir -p /root/repos
 WORKDIR /root/repos
-RUN echo hola
 RUN apt-get update && \
     apt-get purge -y '*opencv*' || echo "existing OpenCV installation not found" && \
     apt-get install -y --no-install-recommends \
@@ -110,6 +109,10 @@ RUN cd /root/repos && git clone https://pat:ZBDrnj-dzZEUdBAFz6KF@gitlab.bsc.es/p
 WORKDIR /root/repos/camera-edge
 RUN git clone https://pat:4dvKs5a1DtGsoeVfFxci@gitlab.bsc.es/ppc/benchmarks/ai/trt-detect.git -b Vicente-Masip-CU-86bz8v5k1
 RUN apt-get update -y && apt install -y gdb
+RUN mkdir build && cd build && cmake .. && make
+
+ENTRYPOINT ["/root/repos/camera-edge/build/edge /root/repos/camera-edge/data/all_cameras_en.yaml", "-s0", "-v 1", "-u 1"]
+CMD ["0001"]
 
 # RUN echo hola
 # RUN ls -laRt .
