@@ -27,6 +27,4 @@ data/637/*
 build*
 *.engine
 *.pt
-trt-detect/*
-trt-detect
-
+.*/trt-detect/

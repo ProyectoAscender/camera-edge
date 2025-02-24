@@ -35,7 +35,7 @@ std::string encryptString(std::string to_encrypt, const std::string &password)
     return executeCommandAndGetOutput(command.c_str());
 }
 
-void readParamsFromYaml(const std::string &params_path, const std::vector<std::string> &cameras_ids, std::vector<edge::camera_params> &cameras_par, std::string &net, char &type, int &n_classes, std::string &tif_map_path)
+void readParamsFromYaml(const std::string &params_path, const std::vector<std::string> &cameras_ids, std::vector<edge::camera_params> &cameras_par, char &type, int &n_classes, std::string &tif_map_path)
 {
     std::string password = "";
     YAML::Node config = YAML::LoadFile(params_path);
@@ -250,7 +250,7 @@ bool readParameters(int argc, char **argv, std::vector<edge::camera_params> &cam
         cameras_par[0].gstreamer = false;
     }
     else
-        readParamsFromYaml(params_path, cameras_ids, cameras_par, net, type, n_classes, tif_map_path);
+        readParamsFromYaml(params_path, cameras_ids, cameras_par, type, n_classes, tif_map_path);
 
 
     // if specified from command line, override parameters read from file

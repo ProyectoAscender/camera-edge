@@ -45,3 +45,5 @@ bool record     = false;
 bool recordBoxes= false;
 bool stream     = false;
 bool use_udp_socket = false;
+std::string net = "";
+

@@ -70,5 +70,6 @@ extern bool verbose;
 extern bool record;
 extern bool recordBoxes;
 extern bool stream;
+extern std::string net;
 
 #endif /*DATA_H*/

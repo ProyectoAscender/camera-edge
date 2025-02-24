@@ -250,10 +250,10 @@ char* prepareMessage( const std::vector<Box> &boxes, unsigned int *frameCounter,
                                         static_cast<unsigned int>(static_cast<unsigned char>(cam_id[3])),
                                         static_cast<unsigned int>(*frameCounter),
                                         static_cast<unsigned long long>(*timestamp_acquisition),
-                                        static_cast<unsigned int>(boxes[i].x),
-                                        static_cast<unsigned int>(boxes[i].y),
-                                        static_cast<unsigned int>(boxes[i].w),
-                                        static_cast<unsigned int>(boxes[i].h),
+                                        static_cast<unsigned int>(boxes[i].rect.x),
+                                        static_cast<unsigned int>(boxes[i].rect.y),
+                                        static_cast<unsigned int>(boxes[i].rect.width),
+                                        static_cast<unsigned int>(boxes[i].rect.height),
                                         static_cast<unsigned int>(*(unsigned int*)&boxes[i].prob),
                                         static_cast<unsigned int>(boxes[i].cl)
                                     );
@@ -329,7 +329,7 @@ void *elaborateSingleCamera_UDP(void *ptr)
 
 
     // YOLO init
-    YoloV6Engine engine("../yolov6_agx13.engine", data.frame.cols, data.frame.rows, 0.5);
+    YoloV6Engine engine(net, data.frame.cols, data.frame.rows, 0.5);
 
     // Pinned memory allocation
     void* pHost;
@@ -417,54 +417,55 @@ void *elaborateSingleCamera_UDP(void *ptr)
             std::cout << "\n\nVC Frame:  " << frameCounter << "; CE frame: " << n_frame << " with timestamp: " << timestamp_acquisition <<std::endl;
 
             // YOLO inference
-            prof.tick("Inference");
+            prof.tick("Inference Pre");
             engine.preprocess(*frame);
+            prof.tock("Inference Pre");
+            prof.tick("Inference Infer");
             engine.infer();
+            prof.tock("Inference Infer");
+            prof.tick("Inference Post");
             const auto boxes = engine.postprocess();
+            prof.tock("Inference Post");
             std::cout << "Number of objects detected: " << boxes.size() << std::endl;
-            prof.tock("Inference");
-
 
             //=============================
             // 2) Send bounding boxes (UDP)
             //=============================
             sendBoundingBoxes(udpSock, clientAddr, clientLen, boxes, frameCounter, cam->id, timestamp_acquisition, prof);
 
-
-            prof.tock("Total time");
-
-
-
+            
+            prof.tick("Record Boxes");
             if (recordBoxes){
                 // **Add frame ID overlay**
                 std::string frameText = "Frame: " + std::to_string(frameCounter) + "TS: " + std::to_string(timestamp_acquisition);
                 cv::Size textSize = cv::getTextSize(frameText, fontFace, fontScale, thickness, &baseline);
                 cv::Point textOrg(frame->cols - textSize.width - 10, frame->rows - 10);
                 cv::putText(*frame, frameText, textOrg, fontFace, fontScale, textColor, thickness);
-
+                
                 // Gstream the frame to SmartCity
                 if (gstreamVideoWriter.isOpened()) {
                     gstreamVideoWriter.write(*frame);
                 }
             }
-
+            prof.tock("Record Boxes");
             if (verbose) 
-                prof.printStats();  
-
-
-
+            prof.printStats();  
+            
+            
+            
         } // if -> image empty
         else {
             // no new frame
             usleep(500);
         }
         
-
+        
         if (n_frame >= data.framesToProcess ) {
             std::cout << "[camera_elaboration_UDP] " << data.camId
-                      << " done after " << n_frame << " frames.\n";
+            << " done after " << n_frame << " frames.\n";
             break;
         }
+        prof.tock("Total time");
     }
 
 

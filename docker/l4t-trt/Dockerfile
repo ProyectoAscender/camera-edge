@@ -105,15 +105,18 @@ ENV AAA=BBB
 RUN echo "BBBB"
 RUN mkdir -p /root/repos/
 RUN mkdir -p /root/b2drop
+RUN echo hola
 RUN cd /root/repos && git clone https://pat:ZBDrnj-dzZEUdBAFz6KF@gitlab.bsc.es/ppc/benchmarks/smart-city/camera-edge.git -b master
 WORKDIR /root/repos/camera-edge
+COPY yolov6nAGXOrin.engine .
+RUN echo "Downloading trt-detect"
 RUN git clone https://pat:4dvKs5a1DtGsoeVfFxci@gitlab.bsc.es/ppc/benchmarks/ai/trt-detect.git -b Vicente-Masip-CU-86bz8v5k1
 RUN apt-get update -y && apt install -y gdb
 RUN mkdir build && cd build && cmake .. && make
-
-ENTRYPOINT ["/root/repos/camera-edge/build/edge /root/repos/camera-edge/data/all_cameras_en.yaml", "-s0", "-v 1", "-u 1"]
+WORKDIR /root/repos/camera-edge/build
+ENTRYPOINT ["./edge", "-i/root/repos/camera-edge/data/all_cameras_en.yaml", "-s0", "-v 1", "-u 1"]
 CMD ["0001"]
-
+# ENTRYPOINT ["ls","-laR", "/root/repos/camera-edge/data"] 
 # RUN echo hola
 # RUN ls -laRt .
 # COPY ./CMakeLists.txt /root/repos/camera-edge/CMakeLists.txt
