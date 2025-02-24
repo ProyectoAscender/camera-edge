@@ -17,16 +17,14 @@ BUILDER=${ROOT_IMAGE}:${TAG}
 PREFIX=registry.gitlab.bsc.es/ppc/benchmarks/smart-city/
 IMAGE=camera-edge
 
-all: image
+all: push
 
 image:
 	# Ensure this is a tab, not spaces
 	DOCKER_BUILDKIT=0 docker build . -f docker/l4t-trt/Dockerfile --build-arg ROOT_CONTAINER=$(BUILDER) -t $(PREFIX)$(IMAGE):$(TAG)
 
 push: image
-# 	# Ensure this is a tab, not spaces
- 	docker push $(PREFIX)$(IMAGE):$(TAG)
+#	docker push $(PREFIX2)$(IMAGE):$(TAG)
+	docker push $(PREFIX)$(IMAGE):$(TAG)
 
 clean:
-	# Optional clean commands can go here
-

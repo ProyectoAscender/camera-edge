@@ -106,6 +106,7 @@ RUN echo "BBBB"
 RUN mkdir -p /root/repos/
 RUN mkdir -p /root/b2drop
 RUN echo hola
+RUN echo "Downloading camera-edge"
 RUN cd /root/repos && git clone https://pat:ZBDrnj-dzZEUdBAFz6KF@gitlab.bsc.es/ppc/benchmarks/smart-city/camera-edge.git -b master
 WORKDIR /root/repos/camera-edge
 COPY yolov6nAGXOrin.engine .
