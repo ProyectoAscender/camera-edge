@@ -21,7 +21,7 @@
 #define CHAR_BOX_SIZE 64
 
 
-
+void printHex(const char* data, size_t length);
 void pixel2GPS(const int x, const int y, double &lat, double &lon, double* adfGeoTransform);
 void GPS2pixel(double lat, double lon, int &x, int &y, double* adfGeoTransform);
 

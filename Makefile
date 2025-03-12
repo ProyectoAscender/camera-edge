@@ -15,6 +15,7 @@ ROOT_IMAGE=nvcr.io/nvidia/l4t-tensorrt
 TAG=r8.5.2.2-devel
 BUILDER=${ROOT_IMAGE}:${TAG}
 PREFIX=registry.gitlab.bsc.es/ppc/benchmarks/smart-city/
+PREFIX2=ghcr.io/proyectoascender/smart-city/
 IMAGE=camera-edge
 
 all: push
@@ -22,9 +23,11 @@ all: push
 image:
 	# Ensure this is a tab, not spaces
 	DOCKER_BUILDKIT=0 docker build . -f docker/l4t-trt/Dockerfile --build-arg ROOT_CONTAINER=$(BUILDER) -t $(PREFIX)$(IMAGE):$(TAG)
+	docker image tag $(PREFIX)$(IMAGE):$(TAG) $(PREFIX2)$(IMAGE):$(TAG)
+
 
 push: image
-#	docker push $(PREFIX2)$(IMAGE):$(TAG)
+	docker push $(PREFIX2)$(IMAGE):$(TAG)
 	docker push $(PREFIX)$(IMAGE):$(TAG)
 
 clean:

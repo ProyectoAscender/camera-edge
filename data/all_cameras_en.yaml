@@ -14,6 +14,22 @@ cameras:
     encrypted: 0
     maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg
 
+
+  - maskfile: !<!> ../data/masks/0001_mask.jpg  
+    id: "0002"
+    input: !<!> "239.255.12.43"
+    #input: !<!> /root/b2drop/barcelona/idelfons/videos/20230721_092248_cam01h264.mp4
+    gstreamer: true
+    gstreamer.height: 1920
+    gstreamer.width: 1280
+    dataPath: !<!> /root/b2drop/barcelona/encants/
+    pmatrix: !<!> /root/b2drop/barcelona/encants/pmat/projMat0002_4pts_centro_utm_ACTIVE.txt
+    cameraCalib: !<!> ../data/calib_cameras/0001.params
+    framesToProcess: 100000
+    portCommunicator: 8882
+    encrypted: 0
+    maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg
+
     # input: !<!> /root/data/florencia/SCWC2022Videos/Resistenza/Video_resistenza_20936_pedestrian_tram.mp4
     # pmatrix: !<!> /root/data/florencia/resistenza/pmat/projMat.txt
     #resolution: !<!> 800x450
@@ -295,4 +311,4 @@ password: ""
 filter: 1
 stream: 1
 record: 0
-recordBoxes: 0
+recordBoxes: 1

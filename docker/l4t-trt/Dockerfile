@@ -97,10 +97,11 @@ RUN apt-get update -y && apt install -y build-essential \
     v4l-utils \
     libglm-dev \
     zlib1g-dev
+
 ARG OPENCV_VERSION="4.7.0"
 COPY docker/l4t-trt/build_opencv.sh build_opencv.sh 
 RUN bash build_opencv.sh  ${OPENCV_VERSION} 
-RUN apt install -y libzmq3-dev
+RUN apt update && apt install -y libzmq3-dev x11-apps
 ENV AAA=BBB
 RUN echo "BBBB"
 RUN mkdir -p /root/repos/
@@ -114,6 +115,9 @@ RUN echo "Downloading trt-detect"
 RUN git clone https://pat:4dvKs5a1DtGsoeVfFxci@gitlab.bsc.es/ppc/benchmarks/ai/trt-detect.git -b Vicente-Masip-CU-86bz8v5k1
 RUN apt-get update -y && apt install -y gdb
 RUN mkdir build && cd build && cmake .. && make
+
+
+
 WORKDIR /root/repos/camera-edge/build
 ENTRYPOINT ["./edge", "-i/root/repos/camera-edge/data/all_cameras_en.yaml", "-s0", "-v 1", "-u 1"]
 CMD ["0001"]

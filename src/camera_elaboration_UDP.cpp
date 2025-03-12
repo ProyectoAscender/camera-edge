@@ -36,7 +36,12 @@ void GPS2pixel(double lat, double lon, int &x, int &y, double* adfGeoTransform)
     y = int(round( (lat - adfGeoTransform[3]) / adfGeoTransform[5]) );
 }
 
-
+void printHex(const char* data, size_t length) {
+    for (size_t i = 0; i < length; ++i) {
+        printf("%02X ", static_cast<unsigned char>(data[i]));
+    }
+    printf("\n");
+}
 
 int setupUDPHandshake(sockaddr_in &clientAddr, edge::video_cap_data &data, int &udpSock, int handshakePort, int bufferSize)
 {
@@ -197,6 +202,13 @@ void sendBoundingBoxes(int udpSock, sockaddr_in &clientAddr, socklen_t clientLen
     prof.tock("Prepare message");
 
 
+    if (message_size > 0 && payload != nullptr) {
+        std::cout << "Enviando mensaje de tamaño: " << message_size << " bytes." << std::endl;
+        std::cout << "Primeros caracteres del payload: " << std::string(payload, std::min(message_size, 10U)) << std::endl;
+    } else {
+        std::cerr << "Error: Payload inválido." << std::endl;
+    }
+
     prof.tick("Publish message");
     // Send the bounding boxes over UDP
     if (message_size > 0) {
@@ -206,6 +218,7 @@ void sendBoundingBoxes(int udpSock, sockaddr_in &clientAddr, socklen_t clientLen
             perror("[camera_elaboration_UDP] Error sending bounding boxes");
         }
     }
+    //printHex(payload, message_size);
     delete[] payload;
 
     prof.tock("Publish message");
@@ -260,6 +273,21 @@ char* prepareMessage( const std::vector<Box> &boxes, unsigned int *frameCounter,
 
 
         buffer += size_of_data ;
+    }
+    // If there are no boxes we send one empty message with frame info
+    if (boxes.size() == 0){
+        std::cout << "No hay cajas: preparando mensaje vacio " << std::endl;
+        size_t size_of_data = snprintf(buffer,
+            CHAR_BOX_SIZE + 1,
+            "%02x%02x%02x%02x%02x%04x%016llx",
+            static_cast<unsigned int>(true),
+            static_cast<unsigned int>(static_cast<unsigned char>(cam_id[0])),
+            static_cast<unsigned int>(static_cast<unsigned char>(cam_id[1])),
+            static_cast<unsigned int>(static_cast<unsigned char>(cam_id[2])),
+            static_cast<unsigned int>(static_cast<unsigned char>(cam_id[3])),
+            static_cast<unsigned int>(*frameCounter),
+            static_cast<unsigned long long>(*timestamp_acquisition)
+        );
     }
 
     *message_size = strlen(buffer_origin);

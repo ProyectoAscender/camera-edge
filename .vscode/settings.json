@@ -80,6 +80,6 @@
         "__bit_reference": "cpp"
     },
     "cmake.debugConfig": {
-        "args": ["-i/root/repos/camera-edge/data/all_cameras_en.yaml", "-s0", "-v 1", "-u 1", "0001"]
+        "args": ["-i/root/repos/camera-edge/data/all_cameras_en.yaml", "-s0", "-v 1", "-u 1", "0002"]
     }
 }
