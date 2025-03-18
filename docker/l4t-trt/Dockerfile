@@ -106,11 +106,12 @@ ENV AAA=BBB
 RUN echo "BBBB"
 RUN mkdir -p /root/repos/
 RUN mkdir -p /root/b2drop
-RUN echo hola
+RUN echo test
 RUN echo "Downloading camera-edge"
 RUN cd /root/repos && git clone https://pat:ZBDrnj-dzZEUdBAFz6KF@gitlab.bsc.es/ppc/benchmarks/smart-city/camera-edge.git -b master
 WORKDIR /root/repos/camera-edge
-COPY yolov6nAGXOrin.engine .
+RUN mkdir models
+COPY yolov6nAGXOrin.engine models/
 RUN echo "Downloading trt-detect"
 RUN git clone https://pat:4dvKs5a1DtGsoeVfFxci@gitlab.bsc.es/ppc/benchmarks/ai/trt-detect.git -b Vicente-Masip-CU-86bz8v5k1
 RUN apt-get update -y && apt install -y gdb

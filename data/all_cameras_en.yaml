@@ -21,7 +21,7 @@ cameras:
     #input: !<!> /root/b2drop/barcelona/idelfons/videos/20230721_092248_cam01h264.mp4
     gstreamer: true
     gstreamer.height: 1920
-    gstreamer.width: 1280
+    gstreamer.width: 1080
     dataPath: !<!> /root/b2drop/barcelona/encants/
     pmatrix: !<!> /root/b2drop/barcelona/encants/pmat/projMat0002_4pts_centro_utm_ACTIVE.txt
     cameraCalib: !<!> ../data/calib_cameras/0001.params
@@ -303,7 +303,7 @@ cameras:
   #   id: 6315
   #   pmatrix: !<!> ../data/pmat_new/pmat_07-03-6315_10p.txt
   #   maskFileOrient: !<!> ../data/masks_orient/3840-2160_mask_null.jpg
-net: !<!> ../yolov6nAGXOrin.engine
+net: !<!> ../models/yolov6nAGXOrin.engine
 classes: 10
 type: !<!> y
 tif: !<!> /root/b2drop/florencia/batoni/tiff/batoni.tif
