@@ -36,12 +36,7 @@ void GPS2pixel(double lat, double lon, int &x, int &y, double* adfGeoTransform)
     y = int(round( (lat - adfGeoTransform[3]) / adfGeoTransform[5]) );
 }
 
-void printHex(const char* data, size_t length) {
-    for (size_t i = 0; i < length; ++i) {
-        printf("%02X ", static_cast<unsigned char>(data[i]));
-    }
-    printf("\n");
-}
+
 
 int setupUDPHandshake(sockaddr_in &clientAddr, edge::video_cap_data &data, int &udpSock, int handshakePort, int bufferSize)
 {
@@ -297,9 +292,6 @@ char* prepareMessage( const std::vector<Box> &boxes, unsigned int *frameCounter,
 }
 
 
-
-
-
 void *elaborateSingleCamera_UDP(void *ptr)
 {
     edge::camera* cam = (edge::camera*) ptr;
@@ -371,6 +363,9 @@ void *elaborateSingleCamera_UDP(void *ptr)
     // Gstreamer Pipeline to send processed frames to SmartCity
     cv::VideoWriter gstreamVideoWriter;
 
+    // Gstreamer Pipeline to send processed frames to SmartCity
+    cv::VideoWriter gstreamVideoWriter_local;
+
     // We'll do it after we've locked down 'frame' size
     int w = data.frame.cols;
     int h = data.frame.rows;
@@ -383,12 +378,6 @@ void *elaborateSingleCamera_UDP(void *ptr)
                 " ! nvv4l2h264enc insert-sps-pps=true iframeinterval=5 idrinterval=5 control-rate=1 bitrate=8000000 "
                 " ! h264parse ! rtph264pay config-interval=1 "
                 " ! udpsink host=239.255.12.42 port=5001 auto-multicast=true";
-
-        // // To save the video in a video file
-        // std::string pipeline = 
-        //     "appsrc ! videoconvert ! "
-        //     "x264enc tune=zerolatency speed-preset=ultrafast bitrate=2000 ! "
-        //     "mp4mux ! filesink location=output_gstream.mp4";
 
         // Open the pipeline
         bool opened = gstreamVideoWriter.open(
@@ -404,6 +393,31 @@ void *elaborateSingleCamera_UDP(void *ptr)
             std::cerr << "[camera_elaboration_UDP] Could not open output GStreamer pipeline.\n";
             // set useGstOutput = false or handle error
         }
+
+
+
+        // Video storage
+        // To save the video in a video file
+        std::string local_pipeline = 
+		     "appsrc ! videoconvert ! "
+		     "x264enc tune=zerolatency speed-preset=ultrafast bitrate=2000 ! "
+		     "mp4mux ! filesink location=output_gstream.mp4";
+
+        // Open the local_pipeline
+        bool local_opened = gstreamVideoWriter_local.open(
+            local_pipeline,
+            cv::CAP_GSTREAMER,
+            0,       // ignored by GStreamer in "appsrc" mode
+            fps,
+            cv::Size(w, h), 
+            true     // isColor
+        );
+        
+        if (!local_opened) {
+            std::cerr << "[camera_elaboration_UDP] Could not open output GStreamer local_pipeline.\n";
+            // set useGstOutput = false or handle error
+        }
+
     }
 
 
@@ -474,6 +488,12 @@ void *elaborateSingleCamera_UDP(void *ptr)
                 if (gstreamVideoWriter.isOpened()) {
                     gstreamVideoWriter.write(*frame);
                 }
+
+                // Store the video locally
+                if (gstreamVideoWriter_local.isOpened()) {
+                    gstreamVideoWriter_local.write(*frame);          // NEW
+                }
+
             }
             prof.tock("Record Boxes");
             if (verbose) 
@@ -514,6 +534,8 @@ void *elaborateSingleCamera_UDP(void *ptr)
     if (udpSock >= 0) {
         close(udpSock);
     }
+
+
 
 
     return (void *)0;
