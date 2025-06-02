@@ -9,7 +9,7 @@ cameras:
     dataPath: !<!> /root/b2drop/barcelona/idelfons/
     pmatrix: !<!> /root/b2drop/barcelona/idelfons/pmat/projMat0001_4pts_centro_utm_ACTIVE.txt
     cameraCalib: !<!> ../data/calib_cameras/0001.params
-    framesToProcess: 5000
+    framesToProcess: 2000
     portCommunicator: 8883
     encrypted: 0
     maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg
@@ -17,7 +17,7 @@ cameras:
 
   - maskfile: !<!> ../data/masks/0001_mask.jpg  
     id: "0002"
-    input: !<!> "239.255.12.43"
+    input: !<!> "239.255.12.40"
     #input: !<!> /root/b2drop/barcelona/idelfons/videos/20230721_092248_cam01h264.mp4
     gstreamer: true
     gstreamer.height: 1920
@@ -25,8 +25,8 @@ cameras:
     dataPath: !<!> /root/b2drop/barcelona/encants/
     pmatrix: !<!> /root/b2drop/barcelona/encants/pmat/projMat0002_4pts_centro_utm_ACTIVE.txt
     cameraCalib: !<!> ../data/calib_cameras/0001.params
-    framesToProcess: 100000
-    portCommunicator: 8882
+    framesToProcess: 1000
+    portCommunicator: 8883
     encrypted: 0
     maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg
 
@@ -303,7 +303,7 @@ cameras:
   #   id: 6315
   #   pmatrix: !<!> ../data/pmat_new/pmat_07-03-6315_10p.txt
   #   maskFileOrient: !<!> ../data/masks_orient/3840-2160_mask_null.jpg
-net: !<!> ../models/yolov6nAGXOrin.engine
+net: !<!> ../models/yolov6mAGXOrin.engine
 classes: 10
 type: !<!> y
 tif: !<!> /root/b2drop/florencia/batoni/tiff/batoni.tif

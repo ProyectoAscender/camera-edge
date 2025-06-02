@@ -36,12 +36,7 @@ void GPS2pixel(double lat, double lon, int &x, int &y, double* adfGeoTransform)
     y = int(round( (lat - adfGeoTransform[3]) / adfGeoTransform[5]) );
 }
 
-void printHex(const char* data, size_t length) {
-    for (size_t i = 0; i < length; ++i) {
-        printf("%02X ", static_cast<unsigned char>(data[i]));
-    }
-    printf("\n");
-}
+
 
 int setupUDPHandshake(sockaddr_in &clientAddr, edge::video_cap_data &data, int &udpSock, int handshakePort, int bufferSize)
 {
@@ -297,9 +292,6 @@ char* prepareMessage( const std::vector<Box> &boxes, unsigned int *frameCounter,
 }
 
 
-
-
-
 void *elaborateSingleCamera_UDP(void *ptr)
 {
     edge::camera* cam = (edge::camera*) ptr;
@@ -371,24 +363,48 @@ void *elaborateSingleCamera_UDP(void *ptr)
     // Gstreamer Pipeline to send processed frames to SmartCity
     cv::VideoWriter gstreamVideoWriter;
 
+    // Gstreamer Pipeline to send processed frames to SmartCity
+    cv::VideoWriter gstreamVideoWriter_local;
+
     // We'll do it after we've locked down 'frame' size
     int w = data.frame.cols;
     int h = data.frame.rows;
     double fps = 30.0; // TO DO this needs to be dynamic
 
     if (recordBoxes) {
+        // va con retraso
         // For example, if agx12 is at 192.168.1.12
-        std::string pipeline =
-                "appsrc ! videoconvert ! video/x-raw,format=NV12 ! nvvidconv ! video/x-raw(memory:NVMM),format=NV12 "
-                " ! nvv4l2h264enc insert-sps-pps=true iframeinterval=5 idrinterval=5 control-rate=1 bitrate=8000000 "
-                " ! h264parse ! rtph264pay config-interval=1 "
-                " ! udpsink host=239.255.12.42 port=5001 auto-multicast=true";
+        // std::string pipeline =
+        //         "appsrc is-live=true ! videoconvert ! video/x-raw,format=NV12 ! nvvidconv ! video/x-raw(memory:NVMM),format=NV12 "
+        //         " ! nvv4l2h264enc insert-sps-pps=true iframeinterval=1 idrinterval=1 control-rate=1 bitrate=32000000 "
+        //         " ! h264parse ! rtph264pay config-interval=1 ! identity name=identity_out silent=false"
+        //         " ! udpsink host=239.255.12.41 port=5001 auto-multicast=true sync=0";
 
-        // // To save the video in a video file
-        // std::string pipeline = 
-        //     "appsrc ! videoconvert ! "
-        //     "x264enc tune=zerolatency speed-preset=ultrafast bitrate=2000 ! "
-        //     "mp4mux ! filesink location=output_gstream.mp4";
+         std::string pipeline =
+        "appsrc ! videoconvert ! "
+        "video/x-raw,format=NV12 ! "
+        "nvvidconv ! video/x-raw(memory:NVMM),format=NV12 ! "
+        "nvv4l2h264enc insert-sps-pps=true iframeinterval=1 idrinterval=1 control-rate=1 bitrate=32000000 ! "
+        "h264parse ! rtph264pay config-interval=1 pt=96 ! "
+        "udpsink host=239.255.12.41 port=5001 auto-multicast=true sync=0";
+
+                
+       // no va, en gst luanch con bola si
+        // std::string pipeline =
+        //     "appsrc is-live=true ! video/x-raw,width=1920,height=1080 ! "
+        //     "x264enc tune=zerolatency bitrate=512 speed-preset=superfast ! "
+        //     "rtph264pay config-interval=1 pt=96 ! "
+        //     "identity name=identity_out silent=false ! "
+        //     "udpsink host=239.255.12.41 port=5001 auto-multicast=true sync=0";
+
+        // retraso igual
+        // std::string pipeline =
+        //     "appsrc ! videoconvert ! video/x-raw,format=I420,width=1920,height=1080 ! "
+        //     "nvvidconv ! video/x-raw(memory:NVMM),format=NV12 ! "
+        //     "nvv4l2h264enc insert-sps-pps=true bitrate=8000000 iframeinterval=30 ! "
+        //     "h264parse ! rtph264pay config-interval=1 pt=96 ! "
+        //     "udpsink host=239.255.12.41 port=5001 auto-multicast=true sync=0";
+
 
         // Open the pipeline
         bool opened = gstreamVideoWriter.open(
@@ -404,6 +420,31 @@ void *elaborateSingleCamera_UDP(void *ptr)
             std::cerr << "[camera_elaboration_UDP] Could not open output GStreamer pipeline.\n";
             // set useGstOutput = false or handle error
         }
+
+
+
+        // Video storage
+        // To save the video in a video file
+        std::string local_pipeline = 
+		     "appsrc ! videoconvert ! "
+		     "x264enc tune=zerolatency speed-preset=ultrafast bitrate=200 ! "
+		     "mp4mux ! filesink location=output_gstream.mp4";
+
+        // Open the local_pipeline
+        bool local_opened = gstreamVideoWriter_local.open(
+            local_pipeline,
+            cv::CAP_GSTREAMER,
+            0,       // ignored by GStreamer in "appsrc" mode
+            fps,
+            cv::Size(w, h), 
+            true     // isColor
+        );
+        
+        if (!local_opened) {
+            std::cerr << "[camera_elaboration_UDP] Could not open output GStreamer local_pipeline.\n";
+            // set useGstOutput = false or handle error
+        }
+
     }
 
 
@@ -456,25 +497,35 @@ void *elaborateSingleCamera_UDP(void *ptr)
             prof.tock("Inference Post");
             std::cout << "Number of objects detected: " << boxes.size() << std::endl;
 
+            
             //=============================
             // 2) Send bounding boxes (UDP)
             //=============================
             sendBoundingBoxes(udpSock, clientAddr, clientLen, boxes, frameCounter, cam->id, timestamp_acquisition, prof);
-
+            
             
             prof.tick("Record Boxes");
             if (recordBoxes){
                 // **Add frame ID overlay**
-                std::string frameText = "Frame: " + std::to_string(frameCounter) + "TS: " + std::to_string(timestamp_acquisition);
-                cv::Size textSize = cv::getTextSize(frameText, fontFace, fontScale, thickness, &baseline);
-                cv::Point textOrg(frame->cols - textSize.width - 10, frame->rows - 10);
-                cv::putText(*frame, frameText, textOrg, fontFace, fontScale, textColor, thickness);
+                // std::cout << "XXXXX" << frameCounter << " XXXXXX .\n";
+                // std::string frameText = "Frame: " + std::to_string(frameCounter) + " - TS: " + std::to_string(timestamp_acquisition);
+                // cv::Size textSize = cv::getTextSize(frameText, fontFace, fontScale, thickness, &baseline);
+                // cv::Point textOrg(frame->cols - textSize.width - 15, frame->rows - 10);
+                // cv::putText(*frame, frameText, textOrg, fontFace, fontScale, textColor, thickness);
                 
+                // std::cin.get();
                 // Gstream the frame to SmartCity
                 if (gstreamVideoWriter.isOpened()) {
                     gstreamVideoWriter.write(*frame);
                 }
-            }
+                
+                // // Store the video locally
+                // if (gstreamVideoWriter_local.isOpened()) {
+                    //     gstreamVideoWriter_local.write(*frame);          // NEW
+                    // }
+                    
+                }
+            
             prof.tock("Record Boxes");
             if (verbose) 
             prof.printStats();  
@@ -514,6 +565,8 @@ void *elaborateSingleCamera_UDP(void *ptr)
     if (udpSock >= 0) {
         close(udpSock);
     }
+
+
 
 
     return (void *)0;

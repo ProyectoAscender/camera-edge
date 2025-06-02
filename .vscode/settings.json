@@ -77,7 +77,8 @@
         "cfenv": "cpp",
         "*.ipp": "cpp",
         "__node_handle": "cpp",
-        "__bit_reference": "cpp"
+        "__bit_reference": "cpp",
+        "locale": "cpp"
     },
     "cmake.debugConfig": {
         "args": ["-i/root/repos/camera-edge/data/all_cameras_en.yaml", "-s0", "-v 1", "-u 1", "0002"]

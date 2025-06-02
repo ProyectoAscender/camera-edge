@@ -23,8 +23,16 @@ void *readVideoCapture( void *ptr )
     std::cout<<"\n" <<std::endl;
 
     cv::VideoCapture cap("udpsrc port=5000 multicast-group=" + std::string(data->input) +
-                         " auto-multicast=true caps=application/x-rtp,media=video,clock-rate=90000,encoding-name=H264 ! rtph264depay ! h264parse ! avdec_h264 ! videoconvert ! appsink",
+                         " auto-multicast=true caps=application/x-rtp,media=video,clock-rate=90000,encoding-name=H264 ! "
+                         "rtpjitterbuffer latency=15 drop-on-late=false ! "
+                         "rtph264depay ! h264parse ! avdec_h264 ! videoconvert ! appsink",
                          stream_mode);
+
+    // cv::VideoCapture cap("udpsrc port=5000 multicast-group=" + std::string(data->input) +
+    //                      " auto-multicast=true caps=application/x-rtp,media=video,clock-rate=90000,"
+    //                      " encoding-name=H264 ! "
+    //                      "rtph264depay ! h264parse ! avdec_h264 ! videoconvert ! appsink",
+    //                      stream_mode);
 
 
     if(!cap.isOpened()){

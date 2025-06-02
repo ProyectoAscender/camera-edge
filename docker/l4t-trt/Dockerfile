@@ -11,28 +11,7 @@ RUN cmake --version
 # RUN apt-get install -y libgles2-mesa-dev xorg-dev libglu1-mesa-dev
 RUN mkdir -p /root/repos
 WORKDIR /root/repos
-RUN apt-get update && \
-    apt-get purge -y '*opencv*' || echo "existing OpenCV installation not found" && \
-    apt-get install -y --no-install-recommends \
-          nano \
-          mesa-utils \
-          lsb-release \
-          gstreamer1.0-tools \
-          gstreamer1.0-libav \
-          gstreamer1.0-rtsp \
-          gstreamer1.0-plugins-good \
-          gstreamer1.0-plugins-bad \
-          gstreamer1.0-plugins-ugly \
-          libgstreamer-plugins-base1.0-dev \
-          libgstreamer-plugins-good1.0-dev \
-          libgstreamer-plugins-bad1.0-dev && \
-    if [ `lsb_release --codename --short` != 'bionic' ]; then \
-    apt-get install -y --no-install-recommends \
-          gstreamer1.0-plugins-rtp; \
-    else echo "skipping packages unavailable for Ubuntu 18.04"; fi \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
-#
+
 # install development packages (from dustynv jetson-inference repository)
 #
 RUN apt-get update -y && apt-get install -y --no-install-recommends lsb-release
@@ -103,15 +82,14 @@ COPY docker/l4t-trt/build_opencv.sh build_opencv.sh
 RUN bash build_opencv.sh  ${OPENCV_VERSION} 
 RUN apt update && apt install -y libzmq3-dev x11-apps
 ENV AAA=BBB
-RUN echo "BBBB"
-RUN mkdir -p /root/repos/
+
 RUN mkdir -p /root/b2drop
-RUN echo test
 RUN echo "Downloading camera-edge"
 RUN cd /root/repos && git clone https://pat:ZBDrnj-dzZEUdBAFz6KF@gitlab.bsc.es/ppc/benchmarks/smart-city/camera-edge.git -b master
 WORKDIR /root/repos/camera-edge
 RUN mkdir models
-COPY yolov6nAGXOrin.engine models/
+COPY models/yolov6nAGXOrin.engine models/
+COPY models/yolov6mAGXOrin.engine models/
 RUN echo "Downloading trt-detect"
 RUN git clone https://pat:4dvKs5a1DtGsoeVfFxci@gitlab.bsc.es/ppc/benchmarks/ai/trt-detect.git -b Vicente-Masip-CU-86bz8v5k1
 RUN apt-get update -y && apt install -y gdb

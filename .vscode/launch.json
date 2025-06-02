@@ -12,7 +12,16 @@
             "args": ["-i/root/repos/camera-edge/data/all_cameras_en.yaml", "-s0", "-v 1", "-u 1", "0002"],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
-            "environment": [],
+            "environment": [
+                        {
+                            "name": "GST_DEBUG",
+                            "value": "identity:6"
+                        },
+                        {
+                            "name": "GST_DEBUG_FILE",
+                            "value": "{workspaceFolder}/sgst_debug.log"
+                        }
+                    ],
             "externalConsole": false,
             "MIMode": "gdb",
             "setupCommands": [
