@@ -50,13 +50,13 @@ void handshake(zmq::socket_t &rep_socket, edge::video_cap_data &data, int buffer
     std::cout << "- - - - -> Camera " << data.camId << " is ready. " << std::endl;
 
     // Build the camera info in your pipe-delimited style
-    // "Sent ZMQ:|cam->id|cam->gstreamer|framesToProcess|height|width|dataPath"
+    // "Sent ZMQ:|cam->id|cam->multicast|framesToProcess|height|width|dataPath"
 
     // Data to send in handshake
     char infoBuffer[bufferSize];
     snprintf(infoBuffer, bufferSize, "%s|%s|%d|%d|%d|%d|%s",
                 "Sent  UDP: ",
-                data.camId.c_str(), data.gstreamer, data.framesToProcess, 
+                data.camId.c_str(), data.multicast, data.framesToProcess, 
                 data.frame.rows, data.frame.cols, data.dataPath.c_str());
 
     // Send the camera info back
@@ -141,7 +141,7 @@ void *elaborateSingleCamera_ZMQ(void *ptr)
     data.camId              = cam->id;
     data.frameConsumed      = true;
     data.framesToProcess    = cam->framesToProcess;
-    data.gstreamer          = cam->gstreamer;
+    data.multicast          = cam->multicast;
     data.dataPath           = cam->dataPath;
 
 
@@ -237,7 +237,7 @@ void *elaborateSingleCamera_ZMQ(void *ptr)
 
 
     // MAIN LOOP
-    while(gRun){
+    while(gRun.load(std::memory_order_acquire)){
         prof.tick("Total time");
 
         // Copy the last frame from the capture thread
@@ -319,7 +319,7 @@ void *elaborateSingleCamera_ZMQ(void *ptr)
 
 
 
-    gRun = false;
+    gRun.store(false, std::memory_order_release);
     std::cout << "[elaborateSingleCamera] Elaboration ended for cam " << cam->id << ".\n";
 
     if (recordBoxes) {

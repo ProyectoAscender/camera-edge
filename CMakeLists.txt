@@ -1,5 +1,26 @@
 cmake_minimum_required(VERSION 3.5)
 project(edge CXX)
+
+
+
+# -------------------------------------------------
+# -------------------------------------------------
+#  Sanitizer support
+# -------------------------------------------------
+option(ENABLE_SANITIZER_ADDRESS "Build with AddressSanitizer" OFF)
+
+set(SANITIZER_FLAGS
+    "-fsanitize=address -fno-omit-frame-pointer -g")   # <- keep symbols
+
+if(ENABLE_SANITIZER_ADDRESS)
+    add_compile_options(${SANITIZER_FLAGS})
+    add_link_options(${SANITIZER_FLAGS})
+endif()
+
+
+
+
+
 include(FetchContent)
 #-------------------------------------------------------------------------------
 # External Libraries

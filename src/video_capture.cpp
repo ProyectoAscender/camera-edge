@@ -15,29 +15,45 @@ std::string get_timestamp()
 void *readVideoCapture( void *ptr )
 {
     edge::video_cap_data* data = (edge::video_cap_data*) ptr;
-    auto stream_mode = data->gstreamer ? cv::CAP_GSTREAMER : cv::CAP_FFMPEG;
 
     std::cout<<"\tVC-> Thread: "<<data->input<< " started" <<std::endl;
-    std::cout<<"\tVC-> Data->gstreamer: "<<  data->gstreamer <<std::endl;
-    std::cout<<"\tVC-> Stream_mode: "<<stream_mode <<std::endl;
+    std::cout<<"\tVC-> Data->multicast: "<<  data->multicast <<std::endl;
     std::cout<<"\n" <<std::endl;
+    std::string pipeline;
 
-    cv::VideoCapture cap("udpsrc port=5000 multicast-group=" + std::string(data->input) +
-                         " auto-multicast=true caps=application/x-rtp,media=video,clock-rate=90000,encoding-name=H264 ! "
-                         "rtpjitterbuffer latency=15 drop-on-late=false ! "
-                         "rtph264depay ! h264parse ! avdec_h264 ! videoconvert ! appsink",
-                         stream_mode);
+    std::string input(data->input); 
 
-    // cv::VideoCapture cap("udpsrc port=5000 multicast-group=" + std::string(data->input) +
-    //                      " auto-multicast=true caps=application/x-rtp,media=video,clock-rate=90000,"
-    //                      " encoding-name=H264 ! "
-    //                      "rtph264depay ! h264parse ! avdec_h264 ! videoconvert ! appsink",
-    //                      stream_mode);
+    if(data->multicast){ // if multicast
+        pipeline =
+        "udpsrc port=5000 multicast-group=" + input +
+        " auto-multicast=true caps=application/x-rtp,media=video,clock-rate=90000,encoding-name=H264 ! "
+        "rtpjitterbuffer latency=15 drop-on-late=false ! "
+        "rtph264depay ! h264parse ! avdec_h264 ! videoconvert ! appsink";
 
+    }else{
+        pipeline =
+        "rtspsrc location=rtsp://" + input + ":554 user-id=user user-pw=Mypassword_7 latency=2000 ! "
+        "rtph264depay ! h264parse ! nvv4l2decoder ! "
+        "nvvidconv ! video/x-raw\\(memory:NVMM\\), format=NV12 ! "
+        "nvvidconv ! video/x-raw, format=BGRx ! videoconvert ! video/x-raw, format=BGR ! "
+        "appsink drop=true sync=false";
+
+        // "rtspsrc location=rtsp://192.168.88.251:554  user-id=user user-pw=Mypassword_7 latency=100 ! "
+        // "rtph264depay ! h264parse ! nvv4l2decoder nvvidconv ! video/x-raw, format=BGRx ! videoconvert ! video/x-raw, format=BGR ! "
+        // "appsink drop=true max-buffers=1 sync=false";
+    //     pipeline =
+    // "rtspsrc location=rtsp://user:Mypassword_7@192.168.88.251:554 latency=100 ! "
+    // "rtph264depay ! h264parse ! nvv4l2decoder ! nvvidconv ! "
+    // "video/x-raw, format=BGRx ! videoconvert ! video/x-raw, format=BGR ! "
+    // "appsink drop=true max-buffers=1 sync=false";
+    
+    }
+
+    cv::VideoCapture cap(pipeline, cv::CAP_GSTREAMER);
 
     if(!cap.isOpened()){
-        std::cout << " -> CASO 1 " << std::endl;
-        gRun = false; 
+        std::cout << " -> GSTREAM CAN'T OPEN! " << std::endl;
+        gRun.store(false, std::memory_order_release);
     }
 
     // Wait until cap gets a frame -> AKA waiting for NX11 to be GStreaming frames.
@@ -79,26 +95,27 @@ void *readVideoCapture( void *ptr )
     edge::Profiler prof("Video capture" + std::string(data->input));
     std::cout << "\n\nSTARTING VIDEO PROCESSING..." << std::endl;
 
-    while(gRun) {
-
+    while(gRun.load(std::memory_order_acquire)) {
+        std::cout << "[camera_elaboration_UDP - YYY] While 1.\n";
         if(!data->frameConsumed) {
-            // std::cout<<" -> Sleeping. Frame consumed = " << data->frameConsumed << std::endl;
+            std::cout<<" -> Sleeping. Frame consumed = " << data->frameConsumed << std::endl;
             usleep(500);
             continue;
         }
         // std::cout<<"\nVC-> Frame acquisition\n" << std::endl;
         prof.tick("Frame acquisition");
+        std::cout << "[camera_elaboration_UDP - YYY] While 2.\n";
         cap >> frame; 
-
+        std::cout << "[camera_elaboration_UDP - YYY] While 3.\n";
         // Timestamp from the Gstreamer
         double pts_msec = cap.get(cv::CAP_PROP_POS_MSEC);
-
         // Convert milliseconds to microseconds and safely cast to uint64_t
         uint64_t pts_usec = static_cast<uint64_t>(std::round(pts_msec * 1000));
-
+        
         prof.tock("Frame acquisition");
 
         if(frame.empty()) {
+            std::cout << "[camera_elaboration_UDP - YYY] While 4.\n";
             usleep(1000000); // 1s
             cap.open(data->input);
             std::cerr<<"frame is empty"<<std::endl;
@@ -107,14 +124,16 @@ void *readVideoCapture( void *ptr )
 
         prof.tick("Frame copy");
         data->mtxF.lock();
+        std::cout << "[camera_elaboration_UDP - YYY] While 5.\n";
         data->frame         = frame.clone();
+        std::cout << "[camera_elaboration_UDP - YYY] While 6.\n";
         data->tStampMs      = pts_usec;
         data->frameCounter++;                           // Increment the frame counter here
         // std::cout << "\tVC --> Frame count: " << data->frameCounter << std::endl;
         data->frameConsumed = false;
         data->mtxF.unlock();
         prof.tock("Frame copy");
-
+        std::cout << "[camera_elaboration_UDP - YYY] While 7.\n";
         if (record){
             //std::cout << " -> Recording result video" << std::endl;
             result_video << frame;
@@ -122,6 +141,7 @@ void *readVideoCapture( void *ptr )
         }
 
         // prof.printStats();
+        std::cout << "[camera_elaboration_UDP - YYY] While 8.\n";
     }
     
     std::cout << " -> video capture ended" << std::endl;

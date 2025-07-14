@@ -50,7 +50,7 @@ int setupUDPHandshake(sockaddr_in &clientAddr, edge::video_cap_data &data, int &
  * 3. If the camera is not ready, responds with "NOTREADY" and waits.
  * 4. If the camera is ready:
  *    - Sends "READY" to signal readiness.
- *    - Sends camera configuration (resolution, gstreamer flag, data path).
+ *    - Sends camera configuration (resolution, multicast flag, data path).
  *    - Waits for an "ACK" from the Python client before finalizing.
  * 
  * @param clientAddr Reference to a sockaddr_in structure to store the Python client's address after the handshake.
@@ -127,9 +127,9 @@ int setupUDPHandshake(sockaddr_in &clientAddr, edge::video_cap_data &data, int &
 
             // Send camera information
             char infoBuffer[bufferSize];
-            snprintf(infoBuffer, bufferSize, "%s|%s|%d|%d|%d|%d|%s",
+            snprintf(infoBuffer, bufferSize, "%s|%s|%d|%d|%d|%d|%d|%s",
                         "Sent  UDP: ",
-                        data.camId.c_str(), data.gstreamer, data.framesToProcess, 
+                        data.camId.c_str(), data.multicast, data.neverend, data.framesToProcess, 
                         data.frame.rows, data.frame.cols, data.dataPath.c_str());
             // Send the camera info back to Python
             ssize_t sent = sendto(udpSock, infoBuffer, strlen(infoBuffer), 0, (struct sockaddr*)&clientAddr, clientLen);
@@ -206,11 +206,12 @@ void sendBoundingBoxes(int udpSock, sockaddr_in &clientAddr, socklen_t clientLen
 
     prof.tick("Publish message");
     // Send the bounding boxes over UDP
+    std::cout << "Enviando mensaje de camID: " << camId << std::endl;
     if (message_size > 0) {
         ssize_t sent = sendto(udpSock, payload, message_size, 0,
                                 (struct sockaddr*)&clientAddr, clientLen);
         if (sent < 0) {
-            perror("[camera_elaboration_UDP] Error sending bounding boxes");
+            perror("[camera_elaboration_UDP)]  Error sending bounding boxes");
         }
     }
     //printHex(payload, message_size);
@@ -244,13 +245,16 @@ char* prepareMessage( const std::vector<Box> &boxes, unsigned int *frameCounter,
  *       defines the per-box serialized size.
  */
 
-    char* buffer = new char[CHAR_BOX_SIZE  * boxes.size() + 1];
+
+    size_t n = std::max<size_t>(1, boxes.size());          // at least one slot
+    char* buffer = new char[CHAR_BOX_SIZE * n + 1];
+    // char* buffer = new char[CHAR_BOX_SIZE  * boxes.size() + 1];
     char *buffer_origin = buffer;
 
     for (int i = 0; i < boxes.size(); i++) {
         size_t size_of_data = snprintf(buffer,
                                         CHAR_BOX_SIZE + 1,
-                                        "%02x%02x%02x%02x%02x%04x%016llx%04x%04x%04x%04x%08x%04x",
+                                        "%02x%02x%02x%02x%02x%08x%016llx%04x%04x%04x%04x%08x%04x",
                                         static_cast<unsigned int>(true),
                                         static_cast<unsigned int>(static_cast<unsigned char>(cam_id[0])),
                                         static_cast<unsigned int>(static_cast<unsigned char>(cam_id[1])),
@@ -305,8 +309,9 @@ void *elaborateSingleCamera_UDP(void *ptr)
     data.camId              = cam->id;
     data.frameConsumed      = true;
     data.framesToProcess    = cam->framesToProcess;
-    data.gstreamer          = cam->gstreamer;
+    data.multicast          = cam->multicast;
     data.dataPath           = cam->dataPath;
+    data.neverend           = cam->neverend;
 
 
 
@@ -330,7 +335,7 @@ void *elaborateSingleCamera_UDP(void *ptr)
     memset(&clientAddr, 0, sizeof(clientAddr));
 
     // Message variables
-    int bufferSize = 70;
+    int bufferSize = 80;
 
     if (setupUDPHandshake(clientAddr, data, udpSock, handshakePort, bufferSize) != 0) {
         std::cerr << "[camera_elaboration_UDP] Handshake failed.\n";
@@ -369,7 +374,7 @@ void *elaborateSingleCamera_UDP(void *ptr)
     // We'll do it after we've locked down 'frame' size
     int w = data.frame.cols;
     int h = data.frame.rows;
-    double fps = 30.0; // TO DO this needs to be dynamic
+    double fps = 20.0; // TO DO this needs to be dynamic
 
     if (recordBoxes) {
         // va con retraso
@@ -461,25 +466,27 @@ void *elaborateSingleCamera_UDP(void *ptr)
     int baseline = 0;
     cv::Scalar textColor(0, 255, 0); // Green text
 
-
-
     // MAIN LOOP
-    while(gRun){
+    while(gRun.load(std::memory_order_acquire)){
         
         prof.tick("Total time");
-
+        std::cout << "[camera_elaboration_UDP - XXX] Pre -copy frame.\n";
         // Copy the last frame from the capture thread
         prof.tick("Copy frame");
         data.mtxF.lock();
         data.frame.copyTo(*frame);
+        std::cout << "[camera_elaboration_UDP - XXX] After -copy frame.\n";
         uint64_t timestamp_acquisition = data.tStampMs;
         unsigned int frameCounter = data.frameCounter;
+        
         bool new_frame = data.frameConsumed;
+        std::cout << "[camera_elaboration_UDP - XXX] After -copy frame 2.\n";
         data.frameConsumed = true;
+        std::cout << "[camera_elaboration_UDP - XXX] After -copy frame 3.\n";
         data.mtxF.unlock();
         prof.tock("Copy frame");
-
-       // If there's a new frame, run inference
+        std::cout << "[camera_elaboration_UDP - XXX] After -copy frame 4.\n";
+        // If there's a new frame, run inference
         if(!frame->empty() && !new_frame) {
             n_frame++;
             
@@ -487,12 +494,15 @@ void *elaborateSingleCamera_UDP(void *ptr)
 
             // YOLO inference
             prof.tick("Inference Pre");
+            std::cout << "[camera_elaboration_UDP - XXX] Inference Pre.\n";
             engine.preprocess(*frame);
             prof.tock("Inference Pre");
             prof.tick("Inference Infer");
+            std::cout << "[camera_elaboration_UDP - XXX] Inference infer.\n";
             engine.infer();
             prof.tock("Inference Infer");
             prof.tick("Inference Post");
+            std::cout << "[camera_elaboration_UDP - XXX] Inference post.\n";
             const auto boxes = engine.postprocess();
             prof.tock("Inference Post");
             std::cout << "Number of objects detected: " << boxes.size() << std::endl;
@@ -501,6 +511,7 @@ void *elaborateSingleCamera_UDP(void *ptr)
             //=============================
             // 2) Send bounding boxes (UDP)
             //=============================
+            std::cout << "[camera_elaboration_UDP - XXX] Sending bounding boxess.\n";
             sendBoundingBoxes(udpSock, clientAddr, clientLen, boxes, frameCounter, cam->id, timestamp_acquisition, prof);
             
             
@@ -512,7 +523,7 @@ void *elaborateSingleCamera_UDP(void *ptr)
                 // cv::Size textSize = cv::getTextSize(frameText, fontFace, fontScale, thickness, &baseline);
                 // cv::Point textOrg(frame->cols - textSize.width - 15, frame->rows - 10);
                 // cv::putText(*frame, frameText, textOrg, fontFace, fontScale, textColor, thickness);
-                
+                std::cout << "[camera_elaboration_UDP - XXX] Sending gstream.\n";
                 // std::cin.get();
                 // Gstream the frame to SmartCity
                 if (gstreamVideoWriter.isOpened()) {
@@ -538,21 +549,17 @@ void *elaborateSingleCamera_UDP(void *ptr)
             usleep(500);
         }
         
-        
-        if (n_frame >= data.framesToProcess ) {
+        if (n_frame >= data.framesToProcess and data.neverend ==  false) {
             std::cout << "[camera_elaboration_UDP] " << data.camId
             << " done after " << n_frame << " frames.\n";
+            std::cout << "[camera_elaboration_UDP - XXX] Breaking loop\n";
             break;
         }
         prof.tock("Total time");
     }
 
-
-
-    gRun = false;
+    gRun.store(false, std::memory_order_release);
     std::cout << "[camera_elaboration_UDP] Elaboration ended for cam " << cam->id << ".\n";
-
-
 
     pthread_join( video_cap, NULL);
 

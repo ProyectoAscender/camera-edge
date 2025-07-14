@@ -23,7 +23,8 @@ struct video_cap_data
     std::string camId         = "0";
     int framesToProcess = -1;
     bool frameConsumed  = false;
-    bool gstreamer      = false;
+    bool multicast      = false;
+    bool neverend       = false;
     std::string dataPath         = "";
     unsigned int frameCounter = 0;  // Frame counter added here
 };

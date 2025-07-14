@@ -1,6 +1,9 @@
 #ifndef DATA_H
 #define DATA_H
 
+#pragma once
+#include <atomic>
+
 #include <iostream>
 #include <cstring>
 #include <iomanip>
@@ -29,7 +32,8 @@ struct camera_params
     int                             framesToProcess     = -1;
     int                             filterType          = 0;
     bool                            show                = false;    
-    bool                            gstreamer           = false;    
+    bool                            multicast           = false;
+    bool                            neverend            = false;   
 };
 
 enum Dataset_t { BDD, COCO, VOC};
@@ -55,7 +59,9 @@ struct camera{
     Dataset_t                       dataset;
     bool                            show                = false;
     bool                            hasCalib            = false;
-    bool                            gstreamer           = false;    
+    bool                            multicast           = false;
+    bool                            neverend            = false;
+
 };
 }
 
@@ -63,7 +69,7 @@ std::ostream& operator<<(std::ostream& os, const edge::camera_params& c);
 std::ostream& operator<<(std::ostream& os, const edge::camera& c);
 
 // extern edge::EdgeViewer *viewer;
-extern bool gRun;
+extern std::atomic<bool> gRun;
 extern bool show;
 extern bool use_udp_socket;
 extern bool verbose;

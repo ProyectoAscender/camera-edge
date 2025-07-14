@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ROOT_IMAGE=nvcr.io/nvidia/l4t-tensorrt
-TAG=r8.5.2.2-devel
+TAG=r8.6.2-devel
 BUILDER=${ROOT_IMAGE}:${TAG}
 PREFIX=registry.gitlab.bsc.es/ppc/benchmarks/smart-city/
 PREFIX2=ghcr.io/proyectoascender/smart-city/
@@ -27,7 +27,7 @@ image:
 
 
 push: image
-	docker push $(PREFIX2)$(IMAGE):$(TAG)
 	docker push $(PREFIX)$(IMAGE):$(TAG)
+	docker push $(PREFIX2)$(IMAGE):$(TAG)
 
 clean:

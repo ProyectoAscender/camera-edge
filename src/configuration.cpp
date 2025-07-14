@@ -82,16 +82,25 @@ void readParamsFromYaml(const std::string &params_path, const std::vector<std::s
         cameras_par[n_cameras - 1].framesToProcess = cameras_yaml[i]["framesToProcess"].as<int>();
         cameras_par[n_cameras - 1].portCommunicator = cameras_yaml[i]["portCommunicator"].as<int>();
 
-        if (cameras_yaml[i]["gstreamer"].as<bool>())
+        if (cameras_yaml[i]["multicast"].as<bool>())
         {
-            cameras_par[n_cameras - 1].gstreamer = true;
+            cameras_par[n_cameras - 1].multicast = true;
         }
         else
         {
-            cameras_par[n_cameras - 1].gstreamer = false;
+            cameras_par[n_cameras - 1].multicast = false;
         }
 
-        if (cameras_par[n_cameras - 1].gstreamer)
+        if (cameras_yaml[i]["neverend"].as<bool>())
+        {
+            cameras_par[n_cameras - 1].neverend = true;
+        }
+        else
+        {
+            cameras_par[n_cameras - 1].neverend = false;
+        }
+
+        if (cameras_par[n_cameras - 1].multicast)
         {
             // if it is a GStreamer stream it cannot be encrypted
             //  rtspsrc location=rtsp://admin:password@192.168.1.65:554 drop-on-latency=0 latency=10 !
@@ -102,8 +111,8 @@ void readParamsFromYaml(const std::string &params_path, const std::vector<std::s
             //  videoconvert ! appsink emit-signals=true sync=true max-buffers=3 drop=false
             // cameras_par[n_cameras - 1].input = "rtpsrc location=" + cameras_yaml[i]["input"].as<std::string>() +
             //                                    " latency=2000 ! queue ! rtph264depay ! h264parse ! omxh264dec !" +
-            //                                    " nvvidconv ! video/x-raw,  width=(int)" + cameras_yaml[i]["gstreamer.width"].as<std::string>() +
-            //                                    ", height=(int)" + cameras_yaml[i]["gstreamer.height"].as<std::string>() +
+            //                                    " nvvidconv ! video/x-raw,  width=(int)" + cameras_yaml[i]["multicast.width"].as<std::string>() +
+            //                                    ", height=(int)" + cameras_yaml[i]["multicast.height"].as<std::string>() +
             //                                    " format=BGRx ! videoconvert ! video/x-raw, format=BGR ! appsink drop=true sync=false";
             cameras_par[n_cameras - 1].input = cameras_yaml[i]["input"].as<std::string>();
         }
@@ -247,7 +256,8 @@ bool readParameters(int argc, char **argv, std::vector<edge::camera_params> &cam
         cameras_par[0].maskFileOrientPath = "";
         cameras_par[0].filterType = 0;
         cameras_par[0].show = true;
-        cameras_par[0].gstreamer = false;
+        cameras_par[0].multicast = false;
+        cameras_par[0].neverend = false;
     }
     else
         readParamsFromYaml(params_path, cameras_ids, cameras_par, type, n_classes, tif_map_path);
@@ -452,7 +462,8 @@ std::vector<edge::camera> configure(int argc, char **argv)
         cameras[i].filterType = cameras_par[i].filterType;
         cameras[i].show = cameras_par[i].show;
 
-        cameras[i].gstreamer = cameras_par[i].gstreamer;
+        cameras[i].multicast = cameras_par[i].multicast;
+        cameras[i].neverend = cameras_par[i].neverend;
         cameras[i].invPrjMat = cameras[i].prjMat.inv();
         cameras[i].dataset = dataset;
     }

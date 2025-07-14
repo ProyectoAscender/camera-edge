@@ -10,7 +10,7 @@
 
 void sig_handler(int signo) {
     std::cout<<"request stop\n";
-    gRun = false;
+    gRun.store(false, std::memory_order_release);
 }
 
 int main(int argc, char **argv)

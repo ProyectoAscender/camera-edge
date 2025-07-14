@@ -78,9 +78,14 @@
         "*.ipp": "cpp",
         "__node_handle": "cpp",
         "__bit_reference": "cpp",
-        "locale": "cpp"
+        "locale": "cpp",
+        "compare": "cpp",
+        "concepts": "cpp",
+        "numbers": "cpp",
+        "semaphore": "cpp",
+        "stop_token": "cpp"
     },
     "cmake.debugConfig": {
-        "args": ["-i/root/repos/camera-edge/data/all_cameras_en.yaml", "-s0", "-v 1", "-u 1", "0002"]
+        "args": ["-i/root/repos/camera-edge/data/all_cameras_en.yaml", "-s0", "-v 1", "-u 1", "0003"]
     }
 }

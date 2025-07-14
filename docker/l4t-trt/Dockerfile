@@ -60,8 +60,6 @@ RUN apt-get update -y && apt install -y build-essential \
     python3-venv \
     libgstreamer1.0-dev \
     libgstreamer-plugins-base1.0-dev \
-    libdc1394-22-dev \
-    libavresample-dev \
     ffmpeg \
     libjpeg8-dev \
     libjpeg-turbo8-dev \
@@ -77,7 +75,7 @@ RUN apt-get update -y && apt install -y build-essential \
     libglm-dev \
     zlib1g-dev
 
-ARG OPENCV_VERSION="4.7.0"
+ARG OPENCV_VERSION="4.10.0"
 COPY docker/l4t-trt/build_opencv.sh build_opencv.sh 
 RUN bash build_opencv.sh  ${OPENCV_VERSION} 
 RUN apt update && apt install -y libzmq3-dev x11-apps
@@ -90,16 +88,21 @@ WORKDIR /root/repos/camera-edge
 RUN mkdir models
 COPY models/yolov6nAGXOrin.engine models/
 COPY models/yolov6mAGXOrin.engine models/
-RUN echo "Downloading trt-detect"
+RUN echo "Downloading trt-detectttt"
 RUN git clone https://pat:4dvKs5a1DtGsoeVfFxci@gitlab.bsc.es/ppc/benchmarks/ai/trt-detect.git -b Vicente-Masip-CU-86bz8v5k1
 RUN apt-get update -y && apt install -y gdb
+# Next step is to overcome a bug trying to compile in 
+# https://gist.github.com/jasongill/fef55cb769657bf36d0bb20ada742249
+# RUN wget -O - https://repo.download.nvidia.com/jetson/common/pool/main/n/nvidia-l4t-dla-compiler/nvidia-l4t-dla-compiler_36.4.1-20241119120551_arm64.deb | dpkg-deb --fsys-tarfile - | tar xv --strip-components=5 --directory=/usr/lib/aarch64-linux-gnu/nvidia/ ./usr/lib/aarch64-linux-gnu/nvidia/libnvdla_compiler.so
+
 RUN mkdir build && cd build && cmake .. && make
 
 
 
 WORKDIR /root/repos/camera-edge/build
-ENTRYPOINT ["./edge", "-i/root/repos/camera-edge/data/all_cameras_en.yaml", "-s0", "-v 1", "-u 1"]
-CMD ["0001"]
+# ENTRYPOINT ["./edge", "-i/root/repos/camera-edge/data/all_cameras_en.yaml", "-s0", "-v 1", "-u 1"]
+# CMD ["0001"]
+ENTRYPOINT ["bash", "../scripts/runEdge.sh"]
 # ENTRYPOINT ["ls","-laR", "/root/repos/camera-edge/data"] 
 # RUN echo hola
 # RUN ls -laRt .

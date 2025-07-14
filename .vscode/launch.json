@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/edge",
-            "args": ["-i/root/repos/camera-edge/data/all_cameras_en.yaml", "-s0", "-v 1", "-u 1", "0002"],
+            "args": ["-i/root/repos/camera-edge/data/all_cameras_en.yaml", "-s0", "-v 1", "-u 1", "0003"],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [
