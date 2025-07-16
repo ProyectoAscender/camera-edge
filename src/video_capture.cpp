@@ -96,7 +96,6 @@ void *readVideoCapture( void *ptr )
     std::cout << "\n\nSTARTING VIDEO PROCESSING..." << std::endl;
 
     while(gRun.load(std::memory_order_acquire)) {
-        std::cout << "[camera_elaboration_UDP - YYY] While 1.\n";
         if(!data->frameConsumed) {
             std::cout<<" -> Sleeping. Frame consumed = " << data->frameConsumed << std::endl;
             usleep(500);
@@ -104,9 +103,7 @@ void *readVideoCapture( void *ptr )
         }
         // std::cout<<"\nVC-> Frame acquisition\n" << std::endl;
         prof.tick("Frame acquisition");
-        std::cout << "[camera_elaboration_UDP - YYY] While 2.\n";
         cap >> frame; 
-        std::cout << "[camera_elaboration_UDP - YYY] While 3.\n";
         // Timestamp from the Gstreamer
         double pts_msec = cap.get(cv::CAP_PROP_POS_MSEC);
         // Convert milliseconds to microseconds and safely cast to uint64_t
@@ -115,7 +112,6 @@ void *readVideoCapture( void *ptr )
         prof.tock("Frame acquisition");
 
         if(frame.empty()) {
-            std::cout << "[camera_elaboration_UDP - YYY] While 4.\n";
             usleep(1000000); // 1s
             cap.open(data->input);
             std::cerr<<"frame is empty"<<std::endl;
@@ -124,16 +120,13 @@ void *readVideoCapture( void *ptr )
 
         prof.tick("Frame copy");
         data->mtxF.lock();
-        std::cout << "[camera_elaboration_UDP - YYY] While 5.\n";
         data->frame         = frame.clone();
-        std::cout << "[camera_elaboration_UDP - YYY] While 6.\n";
         data->tStampMs      = pts_usec;
         data->frameCounter++;                           // Increment the frame counter here
         // std::cout << "\tVC --> Frame count: " << data->frameCounter << std::endl;
         data->frameConsumed = false;
         data->mtxF.unlock();
         prof.tock("Frame copy");
-        std::cout << "[camera_elaboration_UDP - YYY] While 7.\n";
         if (record){
             //std::cout << " -> Recording result video" << std::endl;
             result_video << frame;
@@ -141,7 +134,6 @@ void *readVideoCapture( void *ptr )
         }
 
         // prof.printStats();
-        std::cout << "[camera_elaboration_UDP - YYY] While 8.\n";
     }
     
     std::cout << " -> video capture ended" << std::endl;

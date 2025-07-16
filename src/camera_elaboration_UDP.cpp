@@ -200,8 +200,14 @@ void sendBoundingBoxes(int udpSock, sockaddr_in &clientAddr, socklen_t clientLen
     if (message_size > 0 && payload != nullptr) {
         std::cout << "Enviando mensaje de tamaño: " << message_size << " bytes." << std::endl;
         std::cout << "Primeros caracteres del payload: " << std::string(payload, std::min(message_size, 10U)) << std::endl;
+        size_t last_count = std::min(message_size, 10U);
+        const char* last_part = payload + (message_size - last_count);
+        std::cout << "Últimos caracteres del payload: "
+                << std::string(last_part, last_count) << std::endl;
     } else {
+        std::cout << "Error: Payload inválido." << std::endl;
         std::cerr << "Error: Payload inválido." << std::endl;
+
     }
 
     prof.tick("Publish message");
@@ -211,6 +217,7 @@ void sendBoundingBoxes(int udpSock, sockaddr_in &clientAddr, socklen_t clientLen
         ssize_t sent = sendto(udpSock, payload, message_size, 0,
                                 (struct sockaddr*)&clientAddr, clientLen);
         if (sent < 0) {
+            std::cout << "[camera_elaboration_UDP)]  Error sending bounding boxes" << std::endl;
             perror("[camera_elaboration_UDP)]  Error sending bounding boxes");
         }
     }
@@ -475,17 +482,12 @@ void *elaborateSingleCamera_UDP(void *ptr)
         prof.tick("Copy frame");
         data.mtxF.lock();
         data.frame.copyTo(*frame);
-        std::cout << "[camera_elaboration_UDP - XXX] After -copy frame.\n";
         uint64_t timestamp_acquisition = data.tStampMs;
         unsigned int frameCounter = data.frameCounter;
-        
         bool new_frame = data.frameConsumed;
-        std::cout << "[camera_elaboration_UDP - XXX] After -copy frame 2.\n";
         data.frameConsumed = true;
-        std::cout << "[camera_elaboration_UDP - XXX] After -copy frame 3.\n";
         data.mtxF.unlock();
         prof.tock("Copy frame");
-        std::cout << "[camera_elaboration_UDP - XXX] After -copy frame 4.\n";
         // If there's a new frame, run inference
         if(!frame->empty() && !new_frame) {
             n_frame++;
@@ -494,26 +496,19 @@ void *elaborateSingleCamera_UDP(void *ptr)
 
             // YOLO inference
             prof.tick("Inference Pre");
-            std::cout << "[camera_elaboration_UDP - XXX] Inference Pre.\n";
             engine.preprocess(*frame);
             prof.tock("Inference Pre");
             prof.tick("Inference Infer");
-            std::cout << "[camera_elaboration_UDP - XXX] Inference infer.\n";
             engine.infer();
             prof.tock("Inference Infer");
             prof.tick("Inference Post");
-            std::cout << "[camera_elaboration_UDP - XXX] Inference post.\n";
             const auto boxes = engine.postprocess();
             prof.tock("Inference Post");
             std::cout << "Number of objects detected: " << boxes.size() << std::endl;
-
-            
             //=============================
             // 2) Send bounding boxes (UDP)
             //=============================
-            std::cout << "[camera_elaboration_UDP - XXX] Sending bounding boxess.\n";
             sendBoundingBoxes(udpSock, clientAddr, clientLen, boxes, frameCounter, cam->id, timestamp_acquisition, prof);
-            
             
             prof.tick("Record Boxes");
             if (recordBoxes){

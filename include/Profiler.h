@@ -36,9 +36,7 @@ public:
     
     ~Profiler() {}
     void tick(std::string timer_name){
-        std::cout << "[camera_elaboration_UDP - ZZZ] Ticking...\n";
         timers[timer_name].start = std::chrono::high_resolution_clock::now();
-        std::cout << "[camera_elaboration_UDP - ZZZ] Ticking 2...\n";
     }
 
     void tock(std::string timer_name){
