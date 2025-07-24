@@ -1,15 +1,16 @@
 cameras:
   - maskfile: !<!> ../data/masks/0001_mask.jpg  
     id: "0001"
-    input: !<!> "239.255.12.42"
+    input: !<!> "239.255.12.40"
     #input: !<!> /root/b2drop/barcelona/idelfons/videos/20230721_092248_cam01h264.mp4
     multicast: true
-    gstreamer.height: 1280
-    gstreamer.width: 720
+    gstreamer.height: 1920
+    gstreamer.width: 1080
     dataPath: !<!> /root/b2drop/barcelona/idelfons/
     pmatrix: !<!> /root/b2drop/barcelona/idelfons/pmat/projMat0001_4pts_centro_utm_ACTIVE.txt
     cameraCalib: !<!> ../data/calib_cameras/0001.params
-    framesToProcess: 2000
+    framesToProcess: 1
+    neverend: true
     portCommunicator: 8883
     encrypted: 0
     maskFileOrient: !<!> ../data/masks_orient/1920-1080_mask_null.jpg

@@ -17,4 +17,4 @@ cmake -B build -DCMAKE_BUILD_TYPE= \
       -DENABLE_SANITIZER_ADDRESS=ON \
       ..
 make && \
-nohup ./edge -i ../data/all_cameras_en.yaml -s0 -v 1 -u 1 0003 > ../out.log 2>&1 &
+./edge -i ../data/all_cameras_en.yaml -s0 -v 1 -u 1 0001
